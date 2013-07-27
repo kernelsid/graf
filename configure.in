@@ -1,0 +1,62 @@
+dnl @(#) $Header$ (LBL)
+dnl
+dnl Copyright (c) 1996, 1997
+dnl	The Regents of the University of California.  All rights reserved.
+dnl
+dnl Process this file with autoconf to produce a configure script.
+dnl
+
+AC_INIT(draw.c)
+
+AC_CANONICAL_SYSTEM
+
+umask 002
+
+if test -z "$PWD" ; then
+	PWD=`pwd`
+fi
+
+AC_LBL_C_INIT(V_CCOPT, V_INCLS)
+AC_LBL_HAVE_RUN_PATH
+
+AC_CHECK_HEADERS(malloc.h)
+
+AC_PATH_X
+if test -z "$no_x" ; then
+	if test -n "$x_includes" ; then
+		V_INCLS="$V_INCLS -I$x_includes"
+	fi
+	if test -n "$x_libraries" ; then
+		LIBS="-L$x_libraries $LIBS"
+	fi
+	if test -n "$x_libraries" -a "x$ac_cv_have_run_path" = "xyes" ; then
+		LIBS="-R$x_libraries $LIBS"
+	fi
+fi
+
+AC_LBL_LEX_AND_YACC(V_LEX, V_YACC)
+
+AC_CHECK_LIB(m, main)
+AC_CHECK_LIB(nsl, main)
+AC_CHECK_LIB(socket, main)
+
+AC_LBL_DEVEL(V_CCOPT)
+
+if test -r lbl/gnuc.h ; then
+	rm -f gnuc.h
+	ln -s lbl/gnuc.h gnuc.h
+fi
+
+AC_SUBST(V_CCOPT)
+AC_SUBST(V_INCLS)
+AC_SUBST(V_LEX)
+AC_SUBST(V_YACC)
+
+AC_PROG_INSTALL
+
+AC_OUTPUT(Makefile)
+
+if test -f .devel ; then
+	make depend
+fi
+exit 0
