@@ -60,7 +60,7 @@ Command-line Options
 usage: graf [-B] [-c] [-e] [-m] [-M] [-n] [-o] [-p] [-r] [-R] [-s] [-S]
             [-t] [-u] [-x x1,x2] [-y y1,y2] [-l x] [-l y] [-N label]
             [-T title] [-d host:display] [-f font] [-g geometry] [
-	    file ... ]
+            file ... ]
 
 Fonts must be fixed width.
 
@@ -121,10 +121,10 @@ window.  The are not case sensitive.
     0 - 9    Toggles hiding of the Nth dataset
     m        Toggles showing data point marks
     p        If data point marks are shown, toggles between single pixel
-	     and data point icon
+             and data point icon
     l        Toggles displaying lines between points
     h        Toggles displaying an impulse for each data point (that is, a
-	     vertical line from the Y origin to the data point)
+             vertical line from the Y origin to the data point)
     g or t   Toggles showing the grid vs just tick marks
     b        Toggles showing bounding box
     e        Toggles showing error bars (if dataset includes them)
