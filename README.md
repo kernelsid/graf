@@ -1,5 +1,5 @@
-Help sheet for "graf"					S. Casner
-=====================					9/11/2009
+Help sheet for "graf"
+=====================
 
 graf is a very lightweight graphing tool for use with the X Window
 System.  The program was derived from the original X10 xgraph written
@@ -63,23 +63,24 @@ usage: graf [-B] [-c] [-e] [-m] [-M] [-n] [-o] [-p] [-r] [-R] [-s] [-S]
 	    file ... ]
 
 Fonts must be fixed width.
--B    Draw bar graph
--c    Don't use off-screen pixmaps to enhance screen redraws
--e    Draw error bars at each point
--l x  Logarithmic scale for X axis
--l y  Logarithmic scale for Y axis
--m    Mark each data point with large dot
--M    Forces black and white
--n    Don't draw lines (scatter plot)
--N    Dataset label (repeat for multiple datasets)
--o    Draws bounding box around data
--p    If -m, mark each point with a pixel instead
--r    Draw rectangle at each point (-R for filled)
--s    X notion of spline curves
--S    Set scale for slope display
--t    Draw tick marks instead of full grid
--T    Graph title
--u    Input files are ulaw encoded
+
+    -B    Draw bar graph
+    -c    Don't use off-screen pixmaps to enhance screen redraws
+    -e    Draw error bars at each point
+    -l x  Logarithmic scale for X axis
+    -l y  Logarithmic scale for Y axis
+    -m    Mark each data point with large dot
+    -M    Forces black and white
+    -n    Don't draw lines (scatter plot)
+    -N    Dataset label (repeat for multiple datasets)
+    -o    Draws bounding box around data
+    -p    If -m, mark each point with a pixel instead
+    -r    Draw rectangle at each point (-R for filled)
+    -s    X notion of spline curves
+    -S    Set scale for slope display
+    -t    Draw tick marks instead of full grid
+    -T    Graph title
+    -u    Input files are ulaw encoded
 
 
 Mouse Functions
@@ -117,20 +118,20 @@ Keystroke Commands
 The following keyboard commands can be typed anywhere in the graf
 window.  The are not case sensitive.
 
-0 - 9    Toggles hiding of the Nth dataset
-m        Toggles showing data point marks
-p        If data point marks are shown, toggles between single pixel
-         and data point icon
-l        Toggles displaying lines between points
-h        Toggles displaying an impulse for each data point (that is, a
-         vertical line from the Y origin to the data point)
-g or t   Toggles showing the grid vs just tick marks
-b        Toggles showing bounding box
-e        Toggles showing error bars (if dataset includes them)
-r        Toggle drawing rectangles
-f        Toggle drawing filled rectangles
-s        Toggle drawing lines with splines
-q        Closes the current window
-Ctrl-D   Closes the current window
-Ctrl-C   Quits the graf program
-Ctrl-L   Redraw the window
+    0 - 9    Toggles hiding of the Nth dataset
+    m        Toggles showing data point marks
+    p        If data point marks are shown, toggles between single pixel
+	     and data point icon
+    l        Toggles displaying lines between points
+    h        Toggles displaying an impulse for each data point (that is, a
+	     vertical line from the Y origin to the data point)
+    g or t   Toggles showing the grid vs just tick marks
+    b        Toggles showing bounding box
+    e        Toggles showing error bars (if dataset includes them)
+    r        Toggle drawing rectangles
+    f        Toggle drawing filled rectangles
+    s        Toggle drawing lines with splines
+    q        Closes the current window
+    Ctrl-D   Closes the current window
+    Ctrl-C   Quits the graf program
+    Ctrl-L   Redraw the window
