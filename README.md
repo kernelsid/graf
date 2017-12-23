@@ -94,7 +94,9 @@ then the dataset label, ordinal number of the data point, and any
 optional comment text for that data point will also be displayed.
 That datapoint identification string is also set as the X selection,
 so you can paste it with the middle mouse button into another X window
-such as an xterm.
+such as an xterm.  If the shift key and control key are held while
+the left mouse button is clicked, then the presence of a data point at
+the cursor will be ignored and just the coordinates will be shown.
 
 Drag the left mouse button to show a triangle labeled with the delta
 X, delta Y and slope values.  If the start and end points of the drag
@@ -118,7 +120,7 @@ Keystroke Commands
 The following keyboard commands can be typed anywhere in the graf
 window.  The are not case sensitive.
 
-    0 - 9    Toggles hiding of the Nth dataset
+    0 - 9    Toggles hiding of the Nth dataset, with Ctrl, N+10th
     m        Toggles showing data point marks
     p        If data point marks are shown, toggles between single pixel
              and data point icon

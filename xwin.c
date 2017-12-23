@@ -462,6 +462,25 @@ DoKeyPress(Window win, LocalWin *wi, XKeyEvent *xk, int type)
 			continue;
 		}
 
+		/* In some environments, digit keys with control get translated */
+		switch (keys[k]) {
+		case '\000':
+			keys[k] = '2';
+			break;
+
+		case '\033':
+		case '\034':
+		case '\035':
+		case '\036':
+		case '\037':
+			keys[k] = '3' + keys[k] - '\033';
+			break;
+
+		case '\177':
+			keys[k] = '8';
+			break;
+		}		
+
 		switch (keys[k]) {
 
 		case 'g':
@@ -565,7 +584,8 @@ DoKeyPress(Window win, LocalWin *wi, XKeyEvent *xk, int type)
 		case '7':
 		case '8':
 		case '9':
-			ToggleSet(wi, keys[k] - '0');
+			ToggleSet(wi, keys[k] - '0' +
+				  (xk->state & ControlMask ? 10 : 0));
 			XClearWindow(display, win);
 			DrawWindow(win, wi);
 			break;
