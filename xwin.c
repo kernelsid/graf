@@ -39,7 +39,7 @@
 
 #define DEFAULT_FONT "-*-helvetica-bold-r-*-*-12-*"
 
-static int DoKeyPress(Window, LocalWin *, XKeyEvent *);
+static int DoKeyPress(Window, LocalWin *, XKeyEvent *, int type);
 static int DoButton(XButtonEvent *b, LocalWin *wi, Cursor zc);
 static void DoSelection(XSelectionRequestEvent *);
 void xdefaults(struct plotflags *);
@@ -182,7 +182,7 @@ createWindow(LocalWin *wi)
 	wattr.background_pixel = bgPixel;
 	wattr.border_pixel = bdrPixel;
 	wattr.cursor = crossCursor;
-	wattr.event_mask = ExposureMask|KeyPressMask|ButtonPressMask;
+	wattr.event_mask = ExposureMask|KeyPressMask|KeyReleaseMask|ButtonPressMask;
 
 	win = XCreateWindow(display, RootWindow(display, screen),
 			    wi->sizehints.x, wi->sizehints.y,
@@ -362,7 +362,8 @@ xmain(struct plotflags *flags, int xlimits, int ylimits, double loX, double loY,
 			break;
 
 		case KeyPress:
-			num_wins += DoKeyPress(win, wi, &e.xkey);
+		case KeyRelease:
+			num_wins += DoKeyPress(win, wi, &e.xkey, e.type);
 			break;
 
 		case ButtonPress:
@@ -434,7 +435,7 @@ DataSetHidden(LocalWin *wi, int setno)
 }
 
 static int
-DoKeyPress(Window win, LocalWin *wi, XKeyEvent *xk)
+DoKeyPress(Window win, LocalWin *wi, XKeyEvent *xk, int type)
 {
 	struct plotflags flags;
 	int k, n;
@@ -446,17 +447,22 @@ DoKeyPress(Window win, LocalWin *wi, XKeyEvent *xk)
 
 	get_dflags(wi, &flags);
 	for (k = 0; k < n; ++k) {
+		if (type == KeyRelease) {
+			switch (keys[k]) {
+			case '\003':
+				exit(0);
+
+			case '\004':
+			case 'q':
+			case 'Q':
+				/* Delete this window */
+				DeleteWindow(win, wi);
+				return -1;
+			}
+			continue;
+		}
+
 		switch (keys[k]) {
-
-		case '\003':
-			exit(0);
-
-		case '\004':
-		case 'q':
-		case 'Q':
-			/* Delete this window */
-			DeleteWindow(win, wi);
-			return -1;
 
 		case 'g':
 		case 'G':
