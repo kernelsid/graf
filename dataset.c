@@ -26,6 +26,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 
 #include "flags.h"
@@ -38,6 +39,10 @@
 #endif
 
 #define INITSIZE 512
+
+/* VARARGS */
+extern void error(char* cp, ...);
+extern int yylex (void);
 
 struct data_set *datasets;
 static struct data_set **lastSet = &datasets;

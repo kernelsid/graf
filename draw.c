@@ -25,6 +25,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <X11/Xos.h>
 #include <X11/Xlib.h>
@@ -49,6 +50,15 @@
 #include "bitmaps/mark7.11"
 #include "bitmaps/mark8.11"
 #include "bitmaps/mark9.11"
+
+extern void WriteValue(char *str, double val, int expn);
+extern int DataSetHidden(LocalWin *wi, int setno);
+extern Window NewWindow(BBox *bbp, struct plotflags *flags, LocalWin *parent);
+extern int GetColor(char *name);
+extern int DataSetHidden(LocalWin *wi, int setno);
+
+int TransformCompute(LocalWin *wi);
+
 /* All marks have same dimensions. */
 #define mark_w mark1_width
 #define mark_h mark1_height
@@ -291,11 +301,12 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 		char powerbuf[100];
 		char *power = powerbuf;
 
-		if (logYFlag)
+		if (logYFlag) {
 			if (expY || Yoffset != 0.0)
 				power += sprintf(power, " x 10^(y");
 			else
 				power += sprintf(power, " x 10^y");
+		}
 		if (expY) {
 			if (Yoffset == 0.0)
 				power += sprintf(power, " x 10^%d", expY);
@@ -313,11 +324,12 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 		char powerbuf[100];
 		char *power = powerbuf;
 
-		if (logXFlag)
+		if (logXFlag) {
 			if (expX || Xoffset != 0.0)
 				power += sprintf(power, " x 10^(X");
 			else
 				power += sprintf(power, " x 10^x");
+		}
 		if (expX) {
 			if (Xoffset == 0.0)
 				power += sprintf(power, " x 10^%d", expX);

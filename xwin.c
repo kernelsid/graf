@@ -43,6 +43,20 @@ static int DoKeyPress(Window, LocalWin *, XKeyEvent *);
 static int DoButton(XButtonEvent *b, LocalWin *wi, Cursor zc);
 static void DoSelection(XSelectionRequestEvent *);
 void xdefaults(struct plotflags *);
+int DataSetHidden(LocalWin *wi, int setno);
+
+/* VARARGS */
+extern void error(char* cp, ...);
+extern void DataSetBBox(BBox *b);
+extern void initGCs(Window win);
+extern void RedrawWindow(Window win, LocalWin *wi);
+extern void ResizeWindow(Window win, LocalWin *wi);
+extern void DoIdentify(XButtonEvent *e, LocalWin *wi, Cursor cur, int noPoints);
+extern void DoSlope(XButtonEvent *e, LocalWin *wi, Cursor cur);
+extern void DoDistance(XButtonEvent *e, LocalWin *wi, Cursor cur);
+extern void DoWriteSubset(XButtonEvent *evt, LocalWin *wi, Cursor cur);
+extern int HandleZoom(XButtonEvent *evt, LocalWin *wi, Cursor cur);
+extern void DrawWindow(Window win, LocalWin *wi);
 
 extern char *progname;
 char *geometry = "=600x512";	/* Geometry specification */
@@ -561,12 +575,14 @@ ConvertSelection(Window requestor, Atom target, Atom property)
 		return False;
 	if (target == XA_STRING || target == xa_COMPOUND_TEXT) {
 		XChangeProperty(display, requestor, property, target,
-				8, PropModeReplace, selection, strlen(selection));
+				8, PropModeReplace, (unsigned char*)selection,
+				strlen(selection));
 		return True;
 	}
 	if (target == xa_TEXT) {
 		XChangeProperty(display, requestor, property, XA_STRING,
-				8, PropModeReplace, selection, strlen(selection));
+				8, PropModeReplace, (unsigned char*)selection,
+				strlen(selection));
 		return True;
 	}
 	/*

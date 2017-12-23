@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include "flags.h"
 #include "dataset.h"
@@ -34,6 +35,14 @@
 static char rcsid[] =
     "@(#) $Header$ (LBL)";
 #endif
+
+/* VARARGS */
+extern void error(char* cp, ...);
+extern void xinit(char *dispname, struct plotflags *flags);
+extern void xsetfont(char *name);
+extern void setsetname(register char *name);
+extern void ReadData(char *filename, int ulaw);
+extern void xmain(struct plotflags *flags, int xlimits, int ylimits, double loX, double loY, double hiX, double hiY);
 
 char *progname;
 
