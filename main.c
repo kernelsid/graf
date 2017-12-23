@@ -81,7 +81,7 @@ main(argc, argv)
 	xinit(dispname(argc, argv), &flags);
 
 	/* Parse the argument list */
-	while ((op = getopt(argc, argv, "x:y:cerRsS:tT:mMnN:oBpd:f:g:ul:v")) != -1) {
+	while ((op = getopt(argc, argv, "x:y:cerRsS:tT:mMnN:oBpd:f:g:uDl:v")) != -1) {
 		switch (op) {
 
 		default:
@@ -164,6 +164,10 @@ main(argc, argv)
 			ulawflag = 1;
 			break;
 
+		case 'D':
+			dateXFlag = 1;
+			break;
+
 		case 'l':
 			if (*optarg == 'x')
 				logXFlag = 1;
@@ -208,12 +212,13 @@ usage(void)
 {
 	static char use[] =
 "\
-usage: graf [-B] [-c] [-e] [-m] [-M] [-n] [-o] [-p] [-r] [-R] [-s] [-S]\n\
+usage: graf [-B] [-c] [-D] [-e] [-m] [-M] [-n] [-o] [-p] [-r] [-R] [-s] [-S]\n\
             [-t] [-u] [-x x1,x2] [-y y1,y2] [-l x] [-l y] [-N label]\n\
             [-T title] [-d host:display] [-f font] [-g geometry] [ file ... ]\n\
 \nFonts must be fixed width.\n\
 -B    Draw bar graph\n\
 -c    Don't use off-screen pixmaps to enhance screen redraws\n\
+-D    Interpret X values as timestamps and label axis with date and time\n\
 -e    Draw error bars at each point\n\
 -l x  Logarithmic scale for X axis\n\
 -l y  Logarithmic scale for Y axis\n\

@@ -57,15 +57,16 @@ alternatively be entered with the -T option on the command line.
 Command-line Options
 --------------------
 
-usage: graf [-B] [-c] [-e] [-m] [-M] [-n] [-o] [-p] [-r] [-R] [-s] [-S]
-            [-t] [-u] [-x x1,x2] [-y y1,y2] [-l x] [-l y] [-N label]
-            [-T title] [-d host:display] [-f font] [-g geometry] [
-            file ... ]
+usage: graf [-B] [-c] [-D] [-e] [-m] [-M] [-n] [-o] [-p] [-r] [-R]
+            [-s] [-S] [-t] [-u] [-x x1,x2] [-y y1,y2] [-l x] [-l y]
+            [-N label] [-T title] [-d host:display] [-f font]
+            [-g geometry] [ file ... ]
 
 Fonts must be fixed width.
 
     -B    Draw bar graph
     -c    Don't use off-screen pixmaps to enhance screen redraws
+    -D    Interpret X values as timestamps, label axis with date & time
     -e    Draw error bars at each point
     -l x  Logarithmic scale for X axis
     -l y  Logarithmic scale for Y axis

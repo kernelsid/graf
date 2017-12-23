@@ -36,6 +36,7 @@ struct plotflags {
 	char errorbar;		/* Draw error bars */
 };
 
+extern int dateXFlag;		/* Date X axis */
 extern int logXFlag;		/* Logarithmic X axis */
 extern int logYFlag;		/* Logarithmic Y axis */
 extern char *geometry;
