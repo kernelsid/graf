@@ -56,6 +56,8 @@ extern int DataSetHidden(LocalWin *wi, int setno);
 extern Window NewWindow(BBox *bbp, struct plotflags *flags, LocalWin *parent);
 extern int GetColor(char *name);
 extern int DataSetHidden(LocalWin *wi, int setno);
+extern void xSetWindowName(char* name);
+extern char *progname;
 
 int TransformCompute(LocalWin *wi);
 
@@ -391,6 +393,9 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 
 	/* Center the title near the top of the graph */
 	if (graph_title) {
+		char win_name[MAXIDENTLEN];
+		snprintf(win_name, MAXIDENTLEN, "%s - %s", progname, graph_title);
+		xSetWindowName(win_name);
 		len = strlen(graph_title);
 		w = XTextWidth(axisFont, graph_title, len);
 		x = (wi->width - w) / 2;
@@ -884,7 +889,7 @@ DoIdentify(XButtonEvent *e, LocalWin *wi, Cursor cur, int noPoints)
 	width = XTextWidth(infoFont, labstr, len);
 	height = infoFont->ascent + infoFont->descent;
 	labx -= width / 2;
-	laby += height / 2;
+	laby += height;
 	if (labx + width > wi->width)
 		labx = wi->width - width;
 	if (labx < 0)
@@ -1082,7 +1087,7 @@ DoDistance(XButtonEvent *e, LocalWin *wi, Cursor cur)
 	hwidth = XTextWidth(infoFont, labstr, strlen(labstr));
 	hheight = infoFont->ascent + infoFont->descent;
 	hlabx = sx - hwidth / 2;
-	hlaby = sy + hheight / 2;
+	hlaby = sy + hheight;
 	if (hlabx + hwidth > wi->width)
 		hlabx = wi->width - hwidth;
 	if (hlabx < 0)

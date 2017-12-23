@@ -44,6 +44,7 @@ static int DoButton(XButtonEvent *b, LocalWin *wi, Cursor zc);
 static void DoSelection(XSelectionRequestEvent *);
 void xdefaults(struct plotflags *);
 int DataSetHidden(LocalWin *wi, int setno);
+static Window main_win;
 
 /* VARARGS */
 extern void error(char* cp, ...);
@@ -310,7 +311,6 @@ GetColor(char *name)
 void
 xmain(struct plotflags *flags, int xlimits, int ylimits, double loX, double loY, double hiX, double hiY)
 {
-	Window win;
 	BBox bb;
 	int num_wins;
 
@@ -327,10 +327,10 @@ xmain(struct plotflags *flags, int xlimits, int ylimits, double loX, double loY,
 		bb.loY = loY;
 		bb.hiY = hiY;
 	}
-	win = NewWindow(&bb, flags, (LocalWin *)0);
-	if (win == 0)
+	main_win = NewWindow(&bb, flags, (LocalWin *)0);
+	if (main_win == 0)
 		error("cannot map window");
-	initGCs(win);
+	initGCs(main_win);
 	num_wins = 1;
 	zoomCursor = XCreateFontCursor(display, XC_sizing);
 	crossCursor = XCreateFontCursor(display, XC_crosshair);
@@ -790,4 +790,10 @@ xsetfont(char *name)
 	infoFont = XLoadQueryFont(display, name);
 	if (infoFont == 0)
 		error("cannot find font %s", name);
+}
+
+void
+xSetWindowName(char* name)
+{
+	XStoreName(display, main_win, name);
 }
