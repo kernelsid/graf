@@ -52,6 +52,8 @@ extern int depth;
 extern Display *display;
 extern int zeroPixel;
 extern int normPixel;
+extern int text2Color;
+extern int text3Color;
 extern int bgPixel;
 extern int bwFlag;
 extern char *markcolor;

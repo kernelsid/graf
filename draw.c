@@ -205,13 +205,15 @@ SCREENYS(LocalWin *ws, double userY)
 
 static GC echoGC;
 static GC textGC;
+static GC text2GC;
+static GC text3GC;
 static GC infoGC;
 static GC copyGC;
 
 double slope_scale = 1.0;
 char *graph_title = NULL;
 
-static void
+static int
 WriteDate(str, val)
 	char *str;		/* String to write into */
 	double val;		/* Value to print */
@@ -220,15 +222,20 @@ WriteDate(str, val)
 	struct tm xtm;
 	gmtime_r(&xsec, &xtm);
 	if (fmod(val, 1440*60) == 0.0) {
-		if (xtm.tm_mon == 0 && xtm.tm_mday == 1)
+		if (xtm.tm_mon == 0 && xtm.tm_mday == 1) {
 			strftime(str, 6, "%Y", &xtm);
-		else
+			return 1;
+		} else {
 			strftime(str, 6, "%m/%d", &xtm);
+			return 2;
+		}
 	} else if (fmod(val, 60) == 0.0) {
 		strftime(str, 6, "%H:%M", &xtm);
+		return 3;
 	} else {
 		double sec = fmod(val, 60);
 		(void)sprintf(str, "%06.3f", sec);
+		return 4;
 	}
 }
 
@@ -245,6 +252,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	int y, x, w, n;
 	int height;
 	int len;
+	int textLevelOffset = 0;
 	double Xincr, Yincr, Xstart, Ystart, Yindex, Xindex, larger;
 	double Xoffset, Yoffset, Xbase, Ybase, Xend, Yend;
 	char value[32];
@@ -394,7 +402,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	}
 	if (dateXFlag) {
 		time_t xsec = (time_t)Xstart;
-		struct tm xtm;
+		struct tm xtmin, xtmax;
 		char datebuf[MAXIDENTLEN];
 		char *labptr = datebuf;
 		char *format;
@@ -404,19 +412,28 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 			format = "%Y-%m-%d";
 		else
 			format = "%Y-%m-%d %H:%M";
-		gmtime_r(&xsec, &xtm);
-		labptr += strftime(labptr, MAXIDENTLEN, format, &xtm);
+		gmtime_r(&xsec, &xtmin);
+		labptr += strftime(labptr, MAXIDENTLEN, format, &xtmin);
 		len = labptr - datebuf;
 		x = wi->XOrgX;
 		y = wi->height - height;
 		XDrawString(display, win, textGC, x, y, datebuf, len);
 		xsec = (time_t)wi->UsrOppX;
-		gmtime_r(&xsec, &xtm);
+		gmtime_r(&xsec, &xtmax);
 		labptr = datebuf;
-		labptr += strftime(labptr, MAXIDENTLEN, format, &xtm);
+		labptr += strftime(labptr, MAXIDENTLEN, format, &xtmax);
 		len = labptr - datebuf;
 		x = wi->width - XTextWidth(axisFont, datebuf, len) - 17;
 		XDrawString(display, win, textGC, x, y, datebuf, len);
+		if (xtmin.tm_year == xtmax.tm_year) {
+			++textLevelOffset;
+			if (xtmin.tm_yday == xtmax.tm_yday) {
+				++textLevelOffset;
+				if (xtmin.tm_hour == xtmax.tm_hour &&
+				    xtmin.tm_min == xtmax.tm_min)
+					++textLevelOffset;
+			}
+		}
 	} else if (expX || logXFlag || Xoffset != 0.0) {
 		char powerbuf[100];
 		char *power = powerbuf;
@@ -487,11 +504,15 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 		x = SCREENX(wi, Xindex + Xoffset);
 
 		/* Write the axis label */
+		int textLevel = 1;
 		if (dateXFlag)
-			WriteDate(value, Xindex);
+			textLevel = WriteDate(value, Xindex);
 		else
 			WriteValue(value, Xindex, expX);
-		XDrawString(display, win, textGC, x - w, y,
+		textLevel -= textLevelOffset;
+		GC gc = textLevel <= 1 ? textGC :
+		    textLevel == 2 ? text2GC : text3GC;
+		XDrawString(display, win, gc, x - w, y,
 				 value, strlen(value));
 
 		/* Draw the grid line or tick marks */
@@ -1621,6 +1642,20 @@ initGCs(Window win)
 	v.function = GXcopy;
 	v.font = axisFont->fid;
 	textGC = XCreateGC(display, win, 
+			   GCFont|GCForeground|GCBackground|GCFunction, &v);
+	
+	v.foreground = text2Color;
+	v.background = bgPixel;
+	v.function = GXcopy;
+	v.font = axisFont->fid;
+	text2GC = XCreateGC(display, win, 
+			   GCFont|GCForeground|GCBackground|GCFunction, &v);
+	
+	v.foreground = text3Color;
+	v.background = bgPixel;
+	v.function = GXcopy;
+	v.font = axisFont->fid;
+	text3GC = XCreateGC(display, win, 
 			   GCFont|GCForeground|GCBackground|GCFunction, &v);
 	
 	v.foreground = normPixel;

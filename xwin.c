@@ -71,6 +71,8 @@ int bdrSize;		/* Width of border */
 int bdrPixel;		/* Border color */
 int zeroPixel;		/* Color of the zero axis */
 int normPixel;		/* Foreground (Axis) color */
+int text2Color;		/* Second-level date label color */
+int text3Color;		/* Third-level date label color */
 XFontStruct *axisFont;	/* Font for axis labels */
 XFontStruct *infoFont;	/* Font for info popup labels */
 static Cursor crossCursor;
@@ -716,10 +718,14 @@ xinit(char *dispname, struct plotflags *flags)
 		bgPixel = WhitePixel(display, screen);
 		zeroPixel = BlackPixel(display, screen);
 		normPixel = BlackPixel(display, screen);
+		text2Color = BlackPixel(display, screen);
+		text3Color = BlackPixel(display, screen);
 	} else {
 		bgPixel = WhitePixel(display, screen);
 		zeroPixel = GetColor("LightGray");
 		normPixel = BlackPixel(display, screen);
+		text2Color = GetColor("Gray60");
+		text3Color = GetColor("Gray75");
 	}
 	xdefaults(flags);
 
@@ -797,6 +803,8 @@ xdefaults(struct plotflags *flags)
 	xdef_color("Border", &bdrPixel);
 	xdef_color("Foreground", &normPixel);
 	xdef_color("ZeroColor", &zeroPixel);
+	xdef_color("Text2Color", &text2Color);
+	xdef_color("Text3Color", &text3Color);
 	xdef_font("LabelFont", &axisFont);
 	xdef_font("InfoFont", &infoFont);
 	xdef_flag("Spline", &flags->spline);
