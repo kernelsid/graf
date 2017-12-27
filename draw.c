@@ -424,6 +424,8 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 		labptr += strftime(labptr, MAXIDENTLEN, format, &xtmax);
 		len = labptr - datebuf;
 		x = wi->width - XTextWidth(axisFont, datebuf, len) - 17;
+		if (x > wi->XOppX)
+			x = wi->XOppX;
 		XDrawString(display, win, textGC, x, y, datebuf, len);
 		if (xtmin.tm_year == xtmax.tm_year) {
 			++textLevelOffset;
@@ -456,6 +458,8 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 			power += sprintf(power, ")");
 		len = strlen(powerbuf);
 		x = wi->width - XTextWidth(axisFont, powerbuf, len) - 17;
+		if (x > wi->XOppX)
+			x = wi->XOppX;
 		y = wi->height - height;
 		XDrawString(display, win, textGC, x, y, powerbuf, len);
 	}
