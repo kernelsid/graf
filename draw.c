@@ -220,8 +220,11 @@ WriteDate(str, val)
 {
 	time_t xsec = (time_t)val;
 	struct tm xtm;
-	gmtime_r(&xsec, &xtm);
-	if (fmod(val, 1440*60) == 0.0) {
+	if (localTime)
+		localtime_r(&xsec, &xtm);
+	else
+		gmtime_r(&xsec, &xtm);
+	if (xtm.tm_hour == 0 && xtm.tm_min == 0 && xtm.tm_sec == 0) {
 		if (xtm.tm_mon == 0 && xtm.tm_mday == 1) {
 			strftime(str, 6, "%Y", &xtm);
 			return 1;
@@ -253,6 +256,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	int height;
 	int len;
 	int textLevelOffset = 0;
+	int isDST = 0;
 	double Xincr, Yincr, Xstart, Ystart, Yindex, Xindex, larger;
 	double Xoffset, Yoffset, Xbase, Ybase, Xend, Yend;
 	char value[32];
@@ -321,27 +325,37 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 		Ybase = MaskDigit(&Yoffset, expY + 2) * 100.0;
 		Ystart -= Yoffset;
 	}
-	Xstart = (floor(wi->UsrOrgX / Xincr) + 1.0) * Xincr;
-	Xoffset = 0.0;
-	exp = (int) floor(nlog10(Xincr));
 	if (dateXFlag) {
-		if (Xincr > 14*1440*60) {
-			double day = 1440*60;
-			Xincr = floor((Xincr+day-1)/day)*day;
-			if (Xincr > 28*1440*60 && Xincr < 32*1440*60)
-				Xincr = 32*1440*60;
-			Xstart = floor((Xstart+day-1)/day)*day;
-		} else if (Xincr > 1) {
+		if (Xincr > 60*60) {
+			time_t step = 1440*60;
 			if (Xincr > 720*60) {
-				double day = 1440*60;
-				Xincr = floor((Xincr+day-1)/day)*day;
-			} else if (Xincr > 240*60) {
-				Xincr = 720*60;
-			} else if (Xincr > 120*60) {
-				Xincr = 240*60;
-			} else if (Xincr > 60*60) {
-				Xincr = 120*60;
-			} else if (Xincr > 30*60) {
+				Xincr = floor((Xincr+step-1)/step)*step;
+				if (Xincr > 14*1440*60) {
+					if (Xincr > 28*1440*60 && Xincr < 32*1440*60)
+						Xincr = 32*1440*60;
+				}
+			} else {
+				if (Xincr > 240*60) {
+					Xincr = 720*60;
+				} else if (Xincr > 120*60) {
+					Xincr = 240*60;
+				} else {
+					Xincr = 120*60;
+				}
+				step = Xincr;
+			}
+			if (localTime) {
+				time_t xsec = (time_t)wi->UsrOrgX;
+				xsec += step - 1;
+				struct tm xtm;
+				localtime_r(&xsec, &xtm);
+				xtm.tm_hour -= xtm.tm_hour % (step/(60*60));
+				xtm.tm_min = xtm.tm_sec = 0;
+				Xstart = mktime(&xtm);
+			} else
+				Xstart = floor((wi->UsrOrgX+step-1)/step)*step;
+		} else if (Xincr > 1) {
+			if (Xincr > 30*60) {
 				Xincr = 60*60;
 			} else if (Xincr > 10*60) {
 				Xincr = 30*60;
@@ -360,18 +374,29 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 			} else {
 				Xincr = 5;
 			}
-			Xstart = floor((Xstart+Xincr-1)/Xincr)*Xincr;
+			Xstart = floor((wi->UsrOrgX+Xincr-1)/Xincr)*Xincr;
 		}
-	} else if (!logXFlag && exp < expX - 2) {
-		wi->XPrecisionOffset = ((expX - exp) / 3) * 3;
-		expX -= wi->XPrecisionOffset;
-		Xoffset = Xstart;
-		if (Xstart < 0) {
-			n = (int) floor((wi->UsrOppX - Xstart) / Xincr);
-			Xoffset += n * Xincr;
+		if (localTime) {
+			time_t xsec = (time_t)Xstart;
+			struct tm xtm;
+			localtime_r(&xsec, &xtm);
+			isDST = xtm.tm_isdst;
 		}
-		Xbase = MaskDigit(&Xoffset, expX + 2) * 100.0;
-		Xstart -= Xoffset;
+	} else {
+		Xstart = (floor(wi->UsrOrgX / Xincr) + 1.0) * Xincr;
+		Xoffset = 0.0;
+		exp = (int) floor(nlog10(Xincr));
+		if (!logXFlag && exp < expX - 2) {
+			wi->XPrecisionOffset = ((expX - exp) / 3) * 3;
+			expX -= wi->XPrecisionOffset;
+			Xoffset = Xstart;
+			if (Xstart < 0) {
+				n = (int) floor((wi->UsrOppX - Xstart) / Xincr);
+				Xoffset += n * Xincr;
+			}
+			Xbase = MaskDigit(&Xoffset, expX + 2) * 100.0;
+			Xstart -= Xoffset;
+		}
 	}
 
 	/*
@@ -412,14 +437,20 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 			format = "%Y-%m-%d";
 		else
 			format = "%Y-%m-%d %H:%M";
-		gmtime_r(&xsec, &xtmin);
+		if (localTime)
+			localtime_r(&xsec, &xtmin);
+		else
+			gmtime_r(&xsec, &xtmin);
 		labptr += strftime(labptr, MAXIDENTLEN, format, &xtmin);
 		len = labptr - datebuf;
 		x = wi->XOrgX;
 		y = wi->height - height;
 		XDrawString(display, win, textGC, x, y, datebuf, len);
 		xsec = (time_t)wi->UsrOppX;
-		gmtime_r(&xsec, &xtmax);
+		if (localTime)
+			localtime_r(&xsec, &xtmax);
+		else
+			gmtime_r(&xsec, &xtmax);
 		labptr = datebuf;
 		labptr += strftime(labptr, MAXIDENTLEN, format, &xtmax);
 		len = labptr - datebuf;
@@ -489,20 +520,40 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	y = wi->height - PADDING;
 	Xend = wi->UsrOppX - Xoffset;
 	for (Xindex = Xstart; Xindex < Xend; Xindex += Xincr) {
-		if (dateXFlag && Xincr > 14*1440*60) {
+		if (dateXFlag) {
 			time_t xsec = (time_t)Xindex;
 			struct tm xtm;
-			gmtime_r(&xsec, &xtm);
-			if (xtm.tm_mday > 1) {
-				xtm.tm_mday = 1;
-				++xtm.tm_mon;
-				if (xtm.tm_mon > 11) {
-					xtm.tm_mon = 0;
-					++xtm.tm_year;
+			if (localTime) {
+				localtime_r(&xsec, &xtm);
+				if (Xincr > 60*60 && Xindex > Xstart) {
+					if (isDST && !xtm.tm_isdst) {
+						Xindex += 60*60;
+					} else if (!isDST && xtm.tm_isdst) {
+						Xindex -= 60*60;
+						if (Xincr < 240*60)
+							Xindex += Xincr;
+					}
+					if (Xindex >= Xend)
+						break;
+					xsec = (time_t)Xindex;
+					localtime_r(&xsec, &xtm);
+					isDST = xtm.tm_isdst;
 				}
-				Xindex = timegm(&xtm);
-				if (Xindex >= Xend)
-					break;
+			} else
+				gmtime_r(&xsec, &xtm);
+			if (Xincr > 14*1440*60) {
+				if (xtm.tm_mday > 1) {
+					xtm.tm_mday = 1;
+					++xtm.tm_mon;
+					if (xtm.tm_mon > 11) {
+						xtm.tm_mon = 0;
+						++xtm.tm_year;
+					}
+					Xindex = localTime ? mktime(&xtm) :
+						timegm(&xtm);
+					if (Xindex >= Xend)
+						break;
+				}
 			}
 		}
 		x = SCREENX(wi, Xindex + Xoffset);
@@ -1209,7 +1260,10 @@ DoDistance(XButtonEvent *e, LocalWin *wi, Cursor cur)
 		struct tm xtm;
 		int prec = wi->XPrecisionOffset - 4;
 		
-		gmtime_r(&xsec, &xtm);
+		if (localTime)
+			localtime_r(&xsec, &xtm);
+		else
+			gmtime_r(&xsec, &xtm);
 		labptr += strftime(labptr, MAXIDENTLEN - (labptr - labstr),
 				   "(%Y%m%d-%H%M%S", &xtm);
 		labptr += sprintf(labptr, "=%.*f", 

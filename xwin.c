@@ -63,6 +63,7 @@ extern char *progname;
 char *geometry = "=600x512";	/* Geometry specification */
 Display *display;
 int dateXFlag;		/* Date X axis */
+int localTime;		/* Show timestamps as local time not GMT */
 int logXFlag;		/* Logarithmic X axis */
 int logYFlag;		/* Logarithmic Y axis */
 int bwFlag = -1;	/* Black and white flag */

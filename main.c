@@ -81,7 +81,7 @@ main(argc, argv)
 	xinit(dispname(argc, argv), &flags);
 
 	/* Parse the argument list */
-	while ((op = getopt(argc, argv, "x:y:cerRsS:tT:mMnN:oBpd:f:g:uDl:v")) != -1) {
+	while ((op = getopt(argc, argv, "x:y:cerRsS:tT:mMnN:oBpd:f:g:uDLl:v")) != -1) {
 		switch (op) {
 
 		default:
@@ -166,6 +166,10 @@ main(argc, argv)
 
 		case 'D':
 			dateXFlag = 1;
+			break;
+
+		case 'L':
+			localTime = 1;
 			break;
 
 		case 'l':
