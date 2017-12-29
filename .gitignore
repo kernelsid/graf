@@ -1,0 +1,7 @@
+Makefile
+config.log
+config.status
+gnuc.h
+scan.c
+*.o
+graf
