@@ -257,6 +257,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	int len;
 	int textLevelOffset = 0;
 	int isDST = 0;
+	int Xmonths = 0;
 	double Xincr, Yincr, Xstart, Ystart, Yindex, Xindex, larger;
 	double Xoffset, Yoffset, Xbase, Ybase, Xend, Yend;
 	char value[32];
@@ -331,9 +332,12 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 			if (Xincr > 720*60) {
 				Xincr = floor((Xincr+step-1)/step)*step;
 				if (Xincr > 14*1440*60) {
+					Xmonths = 1;
 					if (Xincr > 28*1440*60 && Xincr < 32*1440*60)
 						Xincr = 32*1440*60;
 				}
+				if (Xincr > 30*1440*60)
+					Xmonths = (int) ceil(Xincr / (30.5*1440*60));
 			} else {
 				if (Xincr > 240*60) {
 					Xincr = 720*60;
@@ -344,16 +348,32 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 				}
 				step = Xincr;
 			}
-			if (localTime) {
-				time_t xsec = (time_t)wi->UsrOrgX;
-				xsec += step - 1;
-				struct tm xtm;
+			time_t xsec = (time_t)wi->UsrOrgX;
+			xsec += step - 1;
+			struct tm xtm;
+			if (localTime)
 				localtime_r(&xsec, &xtm);
-				xtm.tm_hour -= xtm.tm_hour % (step/(60*60));
-				xtm.tm_min = xtm.tm_sec = 0;
-				Xstart = mktime(&xtm);
-			} else
-				Xstart = floor((wi->UsrOrgX+step-1)/step)*step;
+			else
+				gmtime_r(&xsec, &xtm);
+			if (Xmonths && xtm.tm_mday != 1) {
+				xtm.tm_mday = 1;
+				if (++xtm.tm_mon > 11)
+					++xtm.tm_year;
+			}
+			if ((Xmonths >= 2 && Xmonths <= 4) || Xmonths == 6) {
+				int rem = xtm.tm_mon % Xmonths;
+				if (rem != 0) {
+					xtm.tm_mon += Xmonths - rem;
+					if (xtm.tm_mon > 11) {
+						xtm.tm_mon -= 12;
+						++xtm.tm_year;
+					}
+				}
+			}
+			xtm.tm_hour -= xtm.tm_hour % (step/(60*60));
+			xtm.tm_min = xtm.tm_sec = 0;
+			xtm.tm_isdst = -1;
+			Xstart = localTime ? mktime(&xtm) : timegm(&xtm);
 		} else if (Xincr > 1) {
 			if (Xincr > 30*60) {
 				Xincr = 60*60;
@@ -519,43 +539,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	w /= 2;
 	y = wi->height - PADDING;
 	Xend = wi->UsrOppX - Xoffset;
-	for (Xindex = Xstart; Xindex < Xend; Xindex += Xincr) {
-		if (dateXFlag) {
-			time_t xsec = (time_t)Xindex;
-			struct tm xtm;
-			if (localTime) {
-				localtime_r(&xsec, &xtm);
-				if (Xincr > 60*60 && Xindex > Xstart) {
-					if (isDST && !xtm.tm_isdst) {
-						Xindex += 60*60;
-					} else if (!isDST && xtm.tm_isdst) {
-						Xindex -= 60*60;
-						if (Xincr < 240*60)
-							Xindex += Xincr;
-					}
-					if (Xindex >= Xend)
-						break;
-					xsec = (time_t)Xindex;
-					localtime_r(&xsec, &xtm);
-					isDST = xtm.tm_isdst;
-				}
-			} else
-				gmtime_r(&xsec, &xtm);
-			if (Xincr > 14*1440*60) {
-				if (xtm.tm_mday > 1) {
-					xtm.tm_mday = 1;
-					++xtm.tm_mon;
-					if (xtm.tm_mon > 11) {
-						xtm.tm_mon = 0;
-						++xtm.tm_year;
-					}
-					Xindex = localTime ? mktime(&xtm) :
-						timegm(&xtm);
-					if (Xindex >= Xend)
-						break;
-				}
-			}
-		}
+	for (Xindex = Xstart; Xindex < Xend; ) {
 		x = SCREENX(wi, Xindex + Xoffset);
 
 		/* Write the axis label */
@@ -579,6 +563,42 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 		} else
 			XDrawLine(display, win, textGC, x, wi->XOrgY, x,
 				  wi->XOppY);
+		if (!dateXFlag || !Xmonths)
+			Xindex += Xincr;
+		if (dateXFlag) {
+			time_t xsec = (time_t)Xindex;
+			struct tm xtm;
+			if (localTime)
+				localtime_r(&xsec, &xtm);
+			else
+				gmtime_r(&xsec, &xtm);
+			if (Xmonths) {
+				xtm.tm_mon += Xmonths;
+				if (xtm.tm_mon > 11) {
+					xtm.tm_mon -= 12;
+					++xtm.tm_year;
+				}
+				xtm.tm_isdst = -1;
+				Xindex = localTime ? mktime(&xtm) : timegm(&xtm);
+			} else {
+				xsec = (time_t)Xindex;
+				if (localTime && (Xincr > 60*60)) {
+					if (isDST && !xtm.tm_isdst) {
+						Xindex += 60*60;
+					} else if (!isDST && xtm.tm_isdst) {
+						Xindex -= 60*60;
+						if (Xincr < 240*60)
+							Xindex += Xincr;
+					}
+				}
+				xsec = (time_t)Xindex;
+			}
+			if (localTime) {
+				xsec = (time_t)Xindex;
+				localtime_r(&xsec, &xtm);
+				isDST = xtm.tm_isdst;
+			}
+		}
 	}
 
 	/* Center the title near the top of the graph */
