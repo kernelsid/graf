@@ -216,8 +216,8 @@ usage(void)
 {
 	static char use[] =
 "\
-usage: graf [-B] [-c] [-D] [-e] [-m] [-M] [-n] [-o] [-p] [-r] [-R] [-s] [-S]\n\
-            [-t] [-u] [-x x1,x2] [-y y1,y2] [-l x] [-l y] [-N label]\n\
+usage: graf [-B] [-c] [-D] [-L] [-e] [-m] [-M] [-n] [-o] [-p] [-r] [-R] [-s]\n\
+            [-S] [-t] [-u] [-x x1,x2] [-y y1,y2] [-l x] [-l y] [-N label]\n\
             [-T title] [-d host:display] [-f font] [-g geometry] [ file ... ]\n\
 \nFonts must be fixed width.\n\
 -B    Draw bar graph\n\
@@ -226,6 +226,7 @@ usage: graf [-B] [-c] [-D] [-e] [-m] [-M] [-n] [-o] [-p] [-r] [-R] [-s] [-S]\n\
 -e    Draw error bars at each point\n\
 -l x  Logarithmic scale for X axis\n\
 -l y  Logarithmic scale for Y axis\n\
+-L    Show timestamps as local time not GMT\n\
 -m    Mark each data point with large dot\n\
 -M    Forces black and white\n\
 -n    Don't draw lines (scatter plot)\n\
