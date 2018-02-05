@@ -45,6 +45,7 @@ static void DoSelection(XSelectionRequestEvent *);
 void xdefaults(struct plotflags *);
 int DataSetHidden(LocalWin *wi, int setno);
 static Window main_win;
+static Atom wm_delete_window;
 
 /* VARARGS */
 extern void error(char* cp, ...);
@@ -273,6 +274,7 @@ NewWindow(BBox *bbp, struct plotflags *flags, LocalWin *parent)
 	if (win != 0) {
 		add_winfo(win, wi);
 		XMapWindow(display, win);
+		XSetWMProtocols(display, win, &wm_delete_window, 1);
 	}
 	return win;
 }
@@ -331,6 +333,7 @@ xmain(struct plotflags *flags, int xlimits, int ylimits, double loX, double loY,
 		bb.loY = loY;
 		bb.hiY = hiY;
 	}
+	wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", False);
 	main_win = NewWindow(&bb, flags, (LocalWin *)0);
 	if (main_win == 0)
 		error("cannot map window");
@@ -381,6 +384,12 @@ xmain(struct plotflags *flags, int xlimits, int ylimits, double loX, double loY,
 		
 		case SelectionRequest:
 			DoSelection((XSelectionRequestEvent *)&e);
+			break;
+
+		case ClientMessage:
+			/* Delete this window */
+			DeleteWindow(win, wi);
+			--num_wins;
 			break;
 
 		default:
