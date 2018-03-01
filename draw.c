@@ -104,7 +104,7 @@ static char *marks[] = {
  * space.
  *
  * Since a line between two invisible points may also cross the visible space,
- * this function may alsobe called with two invisible points.  This requires
+ * this function may also be called with two invisible points.  This requires
  * the code to protect itself against various overflow conditions.  The result
  * should always be a point within the coordinate space.
  *
@@ -290,9 +290,9 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	Yincr = RoundUp(Yincr);
 
 	if (dateXFlag)
-	    w = XTextWidth(axisFont, "00.000", 6);
+		w = XTextWidth(axisFont, "00.000", 6);
 	else
-	    w = XTextWidth(axisFont, "0000.00", 7);
+		w = XTextWidth(axisFont, "0000.00", 7);
 	Xincr = (SPACE + w) * wi->XUnitsPerPixel;
 	if (!dateXFlag)
 		Xincr = RoundUp(Xincr);
@@ -550,7 +550,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 			WriteValue(value, Xindex, expX);
 		textLevel -= textLevelOffset;
 		GC gc = textLevel <= 1 ? textGC :
-		    textLevel == 2 ? text2GC : text3GC;
+			textLevel == 2 ? text2GC : text3GC;
 		XDrawString(display, win, gc, x - w, y,
 				 value, strlen(value));
 
