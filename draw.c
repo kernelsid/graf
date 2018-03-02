@@ -84,6 +84,9 @@ static char *marks[] = {
 #define PADDING 	2
 #define PIXVALUE(set) 	(AllAttrs[(set) % MAXATTR].pixelValue)
 
+static char *date_formats[] = {"", "%Y", "%Y-%m-%d", "%Y-%m-%d %H:%M:",
+			       "%Y-%m-%d %H:%M:%S."};
+
 /* The following used to be defined in terms of the maximum and minimum
  * value a "short" can hold.  But using those values can tickle bugs in
  * the X server, which is in the habit of adding offsets to coordinates
@@ -218,27 +221,36 @@ WriteDate(str, val)
 	char *str;		/* String to write into */
 	double val;		/* Value to print */
 {
-	time_t xsec = (time_t)val;
+	time_t xsec = (time_t)lround(val);
+	int usec = (int)fmod(round(val*1000000), 1000000);
 	struct tm xtm;
 	if (localTime)
 		localtime_r(&xsec, &xtm);
 	else
 		gmtime_r(&xsec, &xtm);
-	if (xtm.tm_hour == 0 && xtm.tm_min == 0 && xtm.tm_sec == 0) {
+	if (xtm.tm_hour == 0 && xtm.tm_min == 0 && xtm.tm_sec == 0 &&
+	    usec == 0) {
 		if (xtm.tm_mon == 0 && xtm.tm_mday == 1) {
-			strftime(str, 6, "%Y", &xtm);
+			if (str)
+				strftime(str, 6, "%Y", &xtm);
 			return 1;
 		} else {
-			strftime(str, 6, "%m/%d", &xtm);
+			if (str)
+				strftime(str, 6, "%m/%d", &xtm);
 			return 2;
 		}
-	} else if (fmod(val, 60) == 0.0) {
-		strftime(str, 6, "%H:%M", &xtm);
+	} else if (lround(fmod(val, 60) * 1000000) == 0) {
+		if (str)
+			strftime(str, 6, "%H:%M", &xtm);
 		return 3;
-	} else {
-		double sec = fmod(val, 60);
-		(void)sprintf(str, "%06.3f", sec);
+	} else if (fmod(round(val*1000000), 1000) == 0.0) {
+		if (str)
+			(void)sprintf(str, "%06.3f", fmod(val, 60));
 		return 4;
+	} else {
+		if (str)
+			(void)sprintf(str, "%06u", usec);
+		return 5;
 	}
 }
 
@@ -290,7 +302,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	Yincr = RoundUp(Yincr);
 
 	if (dateXFlag)
-		w = XTextWidth(axisFont, "00.000", 6);
+		w = XTextWidth(axisFont, "000000", 6); /* > 00.000 or HH:MM */
 	else
 		w = XTextWidth(axisFont, "0000.00", 7);
 	Xincr = (SPACE + w) * wi->XUnitsPerPixel;
@@ -308,11 +320,12 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	 *
 	 * For date labels on the X axis, find what span of dates is covered in
 	 * order to determine the level of detail in the labels: 2015 12/31
-	 * 23:59 59.000 .  For any given tick mark, the level used will be the
-	 * lowest that is not zero.
+	 * 23:59 59.999 999999.  For any given tick mark, the level used will
+	 * be the lowest that is not zero.
 	 */
 
-	Ystart = (floor(wi->UsrOrgY / Yincr) + 1.0) * Yincr;
+	Ystart = ceil(wi->UsrOrgY / Yincr) * Yincr;
+	if (Ystart == -0.0) Ystart = 0.0;
 	Yoffset = 0.0;
 	exp = (int) floor(nlog10(Yincr));
 	if (!logYFlag && exp < expY - 2) {
@@ -391,10 +404,51 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 				Xincr = 30;
 			} else if (Xincr > 5) {
 				Xincr = 10;
-			} else {
+			} else if (Xincr > 2) {
 				Xincr = 5;
-			}
-			Xstart = floor((wi->UsrOrgX+Xincr-1)/Xincr)*Xincr;
+			} else
+				Xincr = 2;
+			Xstart = ceil(wi->UsrOrgX / Xincr) * Xincr;
+		} else {
+			if (Xincr > 0.5) {
+				Xincr = 1.0;
+			} else if (Xincr > 0.2) {
+				Xincr = 0.5;
+			} else if (Xincr > 0.1) {
+				Xincr = 0.2;
+			} else if (Xincr > 0.05) {
+				Xincr = 0.1;
+			} else if (Xincr > 0.02) {
+				Xincr = 0.05;
+			} else if (Xincr > 0.01) {
+				Xincr = 0.02;
+			} else if (Xincr > 0.005) {
+				Xincr = 0.01;
+			} else if (Xincr > 0.002) {
+				Xincr = 0.005;
+			} else if (Xincr > 0.001) {
+				Xincr = 0.002;
+			} else if (Xincr > 0.0005) {
+				Xincr = 0.001;
+			} else if (Xincr > 0.0002) {
+				Xincr = 0.0005;
+			} else if (Xincr > 0.0001) {
+				Xincr = 0.0002;
+			} else if (Xincr > 0.00005) {
+				Xincr = 0.0001;
+			} else if (Xincr > 0.00002) {
+				Xincr = 0.00005;
+			} else if (Xincr > 0.00001) {
+				Xincr = 0.00002;
+			} else if (Xincr > 0.000005) {
+				Xincr = 0.00001;
+			} else if (Xincr > 0.000002) {
+				Xincr = 0.000005;
+			} else if (Xincr > 0.000001) {
+				Xincr = 0.000002;
+			} else
+				Xincr = 0.000001;
+			Xstart = ceil(wi->UsrOrgX / Xincr) * Xincr;
 		}
 		if (localTime) {
 			time_t xsec = (time_t)Xstart;
@@ -402,8 +456,12 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 			localtime_r(&xsec, &xtm);
 			isDST = xtm.tm_isdst;
 		}
+		n = (int) floor((wi->UsrOppX - Xstart) / Xincr);
+		Xend = Xstart + n * Xincr;
+		Xoffset = 0.0;
 	} else {
-		Xstart = (floor(wi->UsrOrgX / Xincr) + 1.0) * Xincr;
+		Xstart = ceil(wi->UsrOrgX / Xincr) * Xincr;
+		if (Xstart == -0.0) Xstart = 0.0;
 		Xoffset = 0.0;
 		exp = (int) floor(nlog10(Xincr));
 		if (!logXFlag && exp < expX - 2) {
@@ -417,6 +475,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 			Xbase = MaskDigit(&Xoffset, expX + 2) * 100.0;
 			Xstart -= Xoffset;
 		}
+		Xend = wi->UsrOppX - Xoffset;
 	}
 
 	/*
@@ -448,43 +507,46 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	if (dateXFlag) {
 		time_t xsec = (time_t)Xstart;
 		struct tm xtmin, xtmax;
+		int width;
 		char datebuf[MAXIDENTLEN];
 		char *labptr = datebuf;
-		char *format;
-		if (Xincr >= 1440*60)
-			format = "%Y";
-		else if (Xincr >= 60)
-			format = "%Y-%m-%d";
-		else
-			format = "%Y-%m-%d %H:%M";
+		char *format = date_formats[WriteDate(0, Xstart) - 1];
 		if (localTime)
 			localtime_r(&xsec, &xtmin);
 		else
 			gmtime_r(&xsec, &xtmin);
 		labptr += strftime(labptr, MAXIDENTLEN, format, &xtmin);
 		len = labptr - datebuf;
-		x = wi->XOrgX;
+		width = XTextWidth(axisFont, datebuf, len);
+		x = SCREENX(wi, Xstart) - width / 2;
+		if (x < 17)
+			x = 17;
 		y = wi->height - height;
 		XDrawString(display, win, textGC, x, y, datebuf, len);
-		xsec = (time_t)wi->UsrOppX;
+		xsec = (time_t)Xend;
 		if (localTime)
 			localtime_r(&xsec, &xtmax);
 		else
 			gmtime_r(&xsec, &xtmax);
 		labptr = datebuf;
+		format = date_formats[WriteDate(0, Xend) - 1];
 		labptr += strftime(labptr, MAXIDENTLEN, format, &xtmax);
 		len = labptr - datebuf;
-		x = wi->width - XTextWidth(axisFont, datebuf, len) - 17;
-		if (x > wi->XOppX)
-			x = wi->XOppX;
+		width = XTextWidth(axisFont, datebuf, len);
+		x = SCREENX(wi, Xend) - width / 2;
+		if (x + width > wi->width - 17)
+		x = wi->width - width - 17;
 		XDrawString(display, win, textGC, x, y, datebuf, len);
 		if (xtmin.tm_year == xtmax.tm_year) {
 			++textLevelOffset;
 			if (xtmin.tm_yday == xtmax.tm_yday) {
 				++textLevelOffset;
 				if (xtmin.tm_hour == xtmax.tm_hour &&
-				    xtmin.tm_min == xtmax.tm_min)
+				    xtmin.tm_min == xtmax.tm_min) {
 					++textLevelOffset;
+					if (xtmin.tm_sec == xtmax.tm_sec)
+						++textLevelOffset;
+				}
 			}
 		}
 	} else if (expX || logXFlag || Xoffset != 0.0) {
@@ -518,7 +580,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	 * Now,  we can figure out the grid line labels and grid lines
 	 */
 	Yend = wi->UsrOppY - Yoffset;
-	for (Yindex = Ystart; Yindex < Yend; Yindex += Yincr) {
+	for (Yindex = Ystart; Yindex <= Yend; Yindex += Yincr) {
 		y = SCREENY(wi, Yindex + Yoffset);
 
 		/* Write the axis label */
@@ -538,8 +600,8 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	}
 	w /= 2;
 	y = wi->height - PADDING;
-	Xend = wi->UsrOppX - Xoffset;
-	for (Xindex = Xstart; Xindex < Xend; ) {
+	int Xnum = 0;
+	for (Xindex = Xstart; Xindex <= Xend; ++Xnum) {
 		x = SCREENX(wi, Xindex + Xoffset);
 
 		/* Write the axis label */
@@ -564,7 +626,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 			XDrawLine(display, win, textGC, x, wi->XOrgY, x,
 				  wi->XOppY);
 		if (!dateXFlag || !Xmonths)
-			Xindex += Xincr;
+			Xindex = Xstart + Xincr*Xnum; /* Avoid error accum. */
 		if (dateXFlag) {
 			time_t xsec = (time_t)Xindex;
 			struct tm xtm;
