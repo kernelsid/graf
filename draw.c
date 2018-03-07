@@ -304,7 +304,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	if (dateXFlag)
 		w = XTextWidth(axisFont, "000000", 6); /* > 00.000 or HH:MM */
 	else
-		w = XTextWidth(axisFont, "0000.00", 7);
+		w = XTextWidth(axisFont, "-000.00", 7);
 	Xincr = (SPACE + w) * wi->XUnitsPerPixel;
 	if (!dateXFlag)
 		Xincr = RoundUp(Xincr);
@@ -410,44 +410,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 				Xincr = 2;
 			Xstart = ceil(wi->UsrOrgX / Xincr) * Xincr;
 		} else {
-			if (Xincr > 0.5) {
-				Xincr = 1.0;
-			} else if (Xincr > 0.2) {
-				Xincr = 0.5;
-			} else if (Xincr > 0.1) {
-				Xincr = 0.2;
-			} else if (Xincr > 0.05) {
-				Xincr = 0.1;
-			} else if (Xincr > 0.02) {
-				Xincr = 0.05;
-			} else if (Xincr > 0.01) {
-				Xincr = 0.02;
-			} else if (Xincr > 0.005) {
-				Xincr = 0.01;
-			} else if (Xincr > 0.002) {
-				Xincr = 0.005;
-			} else if (Xincr > 0.001) {
-				Xincr = 0.002;
-			} else if (Xincr > 0.0005) {
-				Xincr = 0.001;
-			} else if (Xincr > 0.0002) {
-				Xincr = 0.0005;
-			} else if (Xincr > 0.0001) {
-				Xincr = 0.0002;
-			} else if (Xincr > 0.00005) {
-				Xincr = 0.0001;
-			} else if (Xincr > 0.00002) {
-				Xincr = 0.00005;
-			} else if (Xincr > 0.00001) {
-				Xincr = 0.00002;
-			} else if (Xincr > 0.000005) {
-				Xincr = 0.00001;
-			} else if (Xincr > 0.000002) {
-				Xincr = 0.000005;
-			} else if (Xincr > 0.000001) {
-				Xincr = 0.000002;
-			} else
-				Xincr = 0.000001;
+			Xincr = fmax(RoundUp(Xincr), 0.000001);
 			Xstart = ceil(wi->UsrOrgX / Xincr) * Xincr;
 		}
 		if (localTime) {
@@ -501,7 +464,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 			power += sprintf(power, " + %.0f", Ybase);
 		if (logYFlag && (expY || Yoffset != 0.0))
 			power += sprintf(power, ")");
-		XDrawString(display, win, textGC, w, height,
+		XDrawString(display, win, textGC, w/2, height,
 				 powerbuf, strlen(powerbuf));
 	}
 	if (dateXFlag) {
@@ -521,7 +484,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 		x = SCREENX(wi, Xstart) - width / 2;
 		if (x < 17)
 			x = 17;
-		y = wi->height - height;
+		y = wi->height - PADDING;
 		XDrawString(display, win, textGC, x, y, datebuf, len);
 		xsec = (time_t)Xend;
 		if (localTime)
@@ -573,7 +536,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 		x = wi->width - XTextWidth(axisFont, powerbuf, len) - 17;
 		if (x > wi->XOppX)
 			x = wi->XOppX;
-		y = wi->height - height;
+		y = wi->height - PADDING;
 		XDrawString(display, win, textGC, x, y, powerbuf, len);
 	}
 	/*
@@ -585,8 +548,10 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 
 		/* Write the axis label */
 		WriteValue(value, Yindex, expY);
-		XDrawString(display, win, textGC, 0,
-				 y + axisFont->ascent/2, value, strlen(value));
+		len = strlen(value);
+		x = wi->XOrgX - XTextWidth(axisFont, value, len) - PADDING;
+		XDrawString(display, win, textGC, x, y + axisFont->ascent/2,
+			    value, len);
 
 		/* Draw the grid line or tick mark */
 		if (wi->flags.tick) {
@@ -598,8 +563,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 			XDrawLine(display, win, textGC, wi->XOrgX, y,
 				  wi->XOppX, y);
 	}
-	w /= 2;
-	y = wi->height - PADDING;
+	y = wi->height - height;
 	int Xnum = 0;
 	for (Xindex = Xstart; Xindex <= Xend; ++Xnum) {
 		x = SCREENX(wi, Xindex + Xoffset);
@@ -610,11 +574,13 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 			textLevel = WriteDate(value, Xindex);
 		else
 			WriteValue(value, Xindex, expX);
+		len = strlen(value);
+		w = XTextWidth(axisFont, value, len);
 		textLevel -= textLevelOffset;
 		GC gc = textLevel <= 1 ? textGC :
 			textLevel == 2 ? text2GC : text3GC;
-		XDrawString(display, win, gc, x - w, y,
-				 value, strlen(value));
+		XDrawString(display, win, gc, x - w/2, y,
+				 value, len);
 
 		/* Draw the grid line or tick marks */
 		if (wi->flags.tick) {
@@ -1011,10 +977,10 @@ TransformCompute(LocalWin *wi)
 	 * we have the Y axis unit label. To the left of the
 	 * space we have the Y axis grid labels.
 	 */
-	maxwid = XTextWidth(axisFont, "0000.00", 7) + PADDING;
+	maxwid = XTextWidth(axisFont, "-000.00", 7) + PADDING*2;
 	height = axisFont->ascent + axisFont->descent + PADDING;
 	wi->XOrgX = maxwid;
-	wi->XOrgY = 0;
+	wi->XOrgY = height;
 	/*
 	 * Now we find the lower right corner.  Below the space we have the X
 	 * axis grid labels.  To the right of the space we have the X axis
@@ -1029,8 +995,8 @@ TransformCompute(LocalWin *wi)
 		if (tmpSize > maxName)
 			maxName = tmpSize;
 	}
-	wi->XOppX = wi->width - maxName - PADDING - mark_w;
-	wi->XOppY = wi->height - height - PADDING - mark_w;
+	wi->XOppX = wi->width - maxName - PADDING*2 - mark_w;
+	wi->XOppY = wi->height - height - PADDING - mark_h;
 
 	if ((wi->XOrgX >= wi->XOppX) || (wi->XOrgX >= wi->XOppY)) {
 		(void)fprintf(stderr, "Drawing area is too small\n");

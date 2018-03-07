@@ -222,6 +222,9 @@ NewWindow(BBox *bbp, struct plotflags *flags, LocalWin *parent)
 	Window win;
 	LocalWin *wi;
 	double pad;
+	int exp;
+	double man;
+	double epsilon;
 
 	wi = (LocalWin *)malloc(sizeof(LocalWin));
 	if (wi == 0)
@@ -241,21 +244,36 @@ NewWindow(BBox *bbp, struct plotflags *flags, LocalWin *parent)
 
 	/* Increase the padding for aesthetics */
 	if (wi->hiX - wi->loX == 0.0) {
-		pad = MAX(0.5, fabs(wi->hiX / 2.0));
+		if (dateXFlag)
+			pad = 30*60;
+		else
+			pad = MAX(0.5, fabs(wi->hiX / 2.0));
 		wi->hiX += pad;
 		wi->loX -= pad;
-	}
+	} else {
+		epsilon = ldexp(frexp(wi->loX, &exp), exp - 49);
+		if (wi->hiX - wi->loX < epsilon) {
+			wi->hiX += epsilon;
+			wi->loX -= epsilon;
+		}
+	}			
 	if (wi->hiY - wi->loY == 0) {
 		pad = MAX(0.5, fabs(wi->hiY / 2.0));
 		wi->hiY += pad;
 		wi->loY -= pad;
+	} else {
+		epsilon = ldexp(frexp(wi->loY, &exp), exp - 50);
+		if (wi->hiY - wi->loY < 2*epsilon) {
+			wi->hiY += epsilon;
+			wi->loY -= epsilon;
+		}
 	}
 
-	/* Add 10% padding to bounding box (div by 20 yeilds 5%) */
-	pad = (wi->hiX - wi->loX) / 20.0;
+	/* Add 4% padding to bounding box (div by 50 yeilds 2%) */
+	pad = (wi->hiX - wi->loX) / 50.0;
 	wi->loX -= pad;
 	wi->hiX += pad;
-	pad = (wi->hiY - wi->loY) / 20.0;
+	pad = (wi->hiY - wi->loY) / 50.0;
 	wi->loY -= pad;
 	wi->hiY += pad;
 

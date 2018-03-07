@@ -47,7 +47,7 @@ WriteValue(str, val, expn)
 		for (index = 0; index < expn; index++)
 			val /= 10.0;
 	}
-	(void)sprintf(str, "%7.2f", val);
+	(void)sprintf(str, "%.2f", val);
 }
 
 #define nlog10(x)	(x == 0.0 ? 0.0 : log10(x))
