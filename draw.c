@@ -668,6 +668,8 @@ DrawSet(LocalWin *wi, Window win, struct data_set *p)
 	ver = Xpoints;
 	verend = &Xpoints[MAXPOINTS];
 	op = vp;
+	XSetClipRectangles(display, (GC)p->GC, 0, 0, 
+			   &wi->clip, 1, Unsorted);
 
 	while (vp < ep) {
 		while (ver < verend && vp < ep) {
@@ -833,6 +835,8 @@ DrawSet(LocalWin *wi, Window win, struct data_set *p)
 		ver = &Xpoints[1];
 		rec = Xrectangles;
 	}
+
+	XSetClipMask(display, (GC)p->GC, None);
 }
 
 /*
@@ -847,10 +851,6 @@ DrawData(LocalWin *wi, Window win)
 	for (p = datasets; p != 0; p = p->next) {
 		if (DataSetHidden(wi, p->setno))
 			continue;
-#ifdef notdef
-		XSetClipRectangles(display, (GC)p->GC, 0, 0, 
-				   &wi->clip, 1, Unsorted);
-#endif
 		DrawSet(wi, win, p);
 	}
 }
