@@ -169,6 +169,7 @@ main(argc, argv)
 			break;
 
 		case 'L':
+			dateXFlag = 1;
 			localTime = 1;
 			break;
 
@@ -226,7 +227,7 @@ usage: graf [-B] [-c] [-D] [-L] [-e] [-m] [-M] [-n] [-o] [-p] [-r] [-R] [-s]\n\
 -e    Draw error bars at each point\n\
 -l x  Logarithmic scale for X axis\n\
 -l y  Logarithmic scale for Y axis\n\
--L    Show timestamps as local time not GMT\n\
+-L    Show timestamps as local time not GMT, implies -D\n\
 -m    Mark each data point with large dot\n\
 -M    Forces black and white\n\
 -n    Don't draw lines (scatter plot)\n\
