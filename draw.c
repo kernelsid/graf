@@ -952,6 +952,7 @@ ResizeWindow(Window win, LocalWin *wi)
 		XFreePixmap(display, wi->cache);
 		wi->cache = 0;
 	}
+	XClearWindow(display, win);
 	DrawWindow(win, wi);
 }
 
