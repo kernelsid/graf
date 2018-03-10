@@ -855,6 +855,26 @@ DrawData(LocalWin *wi, Window win)
 }
 
 /*
+ * This routine draws a single data set so it will be rendered on top of any
+ * others already drawn.
+ */
+void
+DrawSetNo(LocalWin *wi, Window win, int setno)
+{
+	register struct data_set *p;
+
+	for (p = datasets; p != 0; p = p->next) {
+		if (p->setno != setno)
+			continue;
+		DrawSet(wi, win, p);
+		if (wi->cache != 0)
+			XCopyArea(display, win, wi->cache, copyGC,
+				  0, 0, wi->width, wi->height, 0, 0);
+		break;
+	}
+}
+
+/*
  * This draws a legend of the data sets displayed.  Only those that will fit
  * are drawn.
  */

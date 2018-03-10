@@ -59,6 +59,7 @@ extern void DoDistance(XButtonEvent *e, LocalWin *wi, Cursor cur);
 extern void DoWriteSubset(XButtonEvent *evt, LocalWin *wi, Cursor cur);
 extern int HandleZoom(XButtonEvent *evt, LocalWin *wi, Cursor cur);
 extern void DrawWindow(Window win, LocalWin *wi);
+extern void DrawSetNo(LocalWin *wi, Window win, int setno);
 
 extern char *progname;
 char *geometry = "=600x512";	/* Geometry specification */
@@ -449,12 +450,13 @@ DoButton(XButtonEvent *b, LocalWin *wi, Cursor zc)
 	return windelta;
 }
 
-void
+int
 ToggleSet(LocalWin *wi, int setno)
 {
 	int bit = setno & (8 * sizeof(wi->hide) - 1);
 
 	wi->hide ^= 1 << bit;
+	return (wi->hide & (1 << bit)) != 0;
 }
 
 int
@@ -470,6 +472,7 @@ DoKeyPress(Window win, LocalWin *wi, XKeyEvent *xk, int type)
 {
 	struct plotflags flags;
 	int k, n;
+	int setno;
 #define	MAXKEYS 32
 	char keys[MAXKEYS];
 
@@ -602,7 +605,8 @@ DoKeyPress(Window win, LocalWin *wi, XKeyEvent *xk, int type)
 			break;
 
 		case '\f':
-			RedrawWindow(win, wi);
+			XClearWindow(display, win);
+			DrawWindow(win, wi);
 			break;
 
 		case '0':
@@ -615,10 +619,14 @@ DoKeyPress(Window win, LocalWin *wi, XKeyEvent *xk, int type)
 		case '7':
 		case '8':
 		case '9':
-			ToggleSet(wi, keys[k] - '0' +
-				  (xk->state & ControlMask ? 10 : 0));
-			XClearWindow(display, win);
-			DrawWindow(win, wi);
+			setno = keys[k] - '0' +
+				  (xk->state & ControlMask ? 10 : 0);
+			if (ToggleSet(wi, setno)) {
+				XClearWindow(display, win);
+				DrawWindow(win, wi);
+				break;
+			}
+			DrawSetNo(wi, win, setno);
 			break;
 		}
 	}
