@@ -235,7 +235,7 @@ usage: graf [-B] [-c] [-D] [-L] [-e] [-m] [-M] [-n] [-o] [-p] [-r] [-R] [-s]\n\
 -o    Draws bounding box around data\n\
 -p    If -m, mark each point with a pixel instead\n\
 -r    Draw rectangle at each point (-R for filled)\n\
--s    X notion of spline curves\n\
+-s    X Window System's notion of spline curves (not implemented)\n\
 -S    Set scale for slope display\n\
 -t    Draw tick marks instead of full grid\n\
 -T    Graph title\n\
