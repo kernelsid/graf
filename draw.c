@@ -55,7 +55,6 @@ extern void WriteValue(char *str, double val, int expn);
 extern int DataSetHidden(LocalWin *wi, int setno);
 extern Window NewWindow(BBox *bbp, struct plotflags *flags, LocalWin *parent);
 extern int GetColor(char *name);
-extern int DataSetHidden(LocalWin *wi, int setno);
 extern void xSetWindowName(char* name);
 extern char *progname;
 
