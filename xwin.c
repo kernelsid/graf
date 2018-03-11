@@ -55,6 +55,7 @@ extern void RedrawWindow(Window win, LocalWin *wi);
 extern void ResizeWindow(Window win, LocalWin *wi);
 extern void DoIdentify(XButtonEvent *e, LocalWin *wi, Cursor cur, int noPoints);
 extern void DoSlope(XButtonEvent *e, LocalWin *wi, Cursor cur);
+extern void DoRegression(XButtonEvent *e, LocalWin *wi, Cursor cur);
 extern void DoDistance(XButtonEvent *e, LocalWin *wi, Cursor cur);
 extern void DoWriteSubset(XButtonEvent *evt, LocalWin *wi, Cursor cur);
 extern int HandleZoom(XButtonEvent *evt, LocalWin *wi, Cursor cur);
@@ -436,7 +437,10 @@ DoButton(XButtonEvent *b, LocalWin *wi, Cursor zc)
 		break;
 
 	case Button2:
-		DoSlope(b, wi, crossCursor);
+		if (b->state & ShiftMask)
+			DoRegression(b, wi, crossCursor);
+		else
+			DoSlope(b, wi, crossCursor);
 		break;
 
 	case Button3:

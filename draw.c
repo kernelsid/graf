@@ -206,6 +206,7 @@ SCREENYS(LocalWin *ws, double userY)
 #define nlog10(x)	(x == 0.0 ? 0.0 : log10(x))
 
 static GC echoGC;
+static GC fitGC;
 static GC textGC;
 static GC text2GC;
 static GC text3GC;
@@ -1061,6 +1062,67 @@ TransformCompute(LocalWin *wi)
 	return 1;
 }
 
+/*
+ * Calculate the least-squares regression (linear fit) for a data set.  We
+ * subtract off the loX and loY values to avoid exceeding the resolution of
+ * double-precision floating point for cases such as timestamps for the X axis.
+ */
+static void calculate_regression(LocalWin *wi, struct data_set *p)
+{
+	double x, y, m, b;
+	double d;
+	double sx = 0, sy = 0, sx2 = 0, sxy = 0;
+	int n = p->numPoints;
+	Value *vp = p->dvec;
+	Value *ep = &p->dvec[n];
+	double lx = p->bb.loX;
+	double ly = p->bb.loY;
+
+	for ( ; vp < ep; ++vp) {
+		x = vp->x - lx;
+		y = vp->y - ly;
+		sx += x;
+		sy += y;
+		sx2 += x*x;
+		sxy += x*y;
+	}
+	d = (n * sx2 - sx * sx);
+	m = (n * sxy - sx * sy) / d;
+	b = (sy - m * sx) / n - m * lx + ly;
+	if (d == 0.0) {
+		p->x1 = SCREENX(wi, p->bb.loX);
+		p->y1 = SCREENY(wi, p->bb.loY);
+		p->x2 = SCREENX(wi, p->bb.hiX);
+		p->y2 = SCREENY(wi, p->bb.hiY);
+	} else {
+		x = p->bb.loX;
+		y = x * m + b;
+		if (y < p->bb.loY) {
+			y = p->bb.loY;
+			x = (y - b) / m;
+		} else if (y > p->bb.hiY) {
+			y = p->bb.hiY;
+			x = (y - b) / m;
+		}
+		p->x1 = SCREENX(wi, x);
+		p->y1 = SCREENY(wi, y);
+		x = p->bb.hiX;
+		y = x * m + b;
+		if (y < p->bb.loY) {
+			y = p->bb.loY;
+			x = (y - b) / m;
+		} else if (y > p->bb.hiY) {
+			y = p->bb.hiY;
+			x = (y - b) / m;
+		}
+		p->x2 = SCREENX(wi, x);
+		p->y2 = SCREENY(wi, y);
+	}
+	p->m = m;
+	p->b = b;
+	p->regression = 1;
+}
+
 static double inline dist(double ux, double uy, double x, double y)
 {
 	double dx = ux - x, dy = uy - y;
@@ -1267,6 +1329,103 @@ DoSlope(XButtonEvent *e, LocalWin *wi, Cursor cur)
 		XDrawImageString(display, w, infoGC, labx,
 				 laby + infoFont->ascent, labstr, len);
 	}
+	XUngrabPointer(display, CurrentTime);
+}
+
+void
+DoRegression(XButtonEvent *e, LocalWin *wi, Cursor cur)
+{
+	Window w = e->window;
+	XEvent ev;
+	Pixmap pm;
+	double ux, uy;
+	struct data_set *mset = 0;
+	int mpt;
+	char *comment = NULL;
+	int labx, laby;
+	int width, height;
+	int len;
+	int st;
+	char labstr[256];
+	char *labptr = labstr;
+	int prec;
+
+	/*
+	 * see if we have point(s) within 8 pixels of the cursor. If so,
+	 * output the index and coordinates of the the closest point.
+	 * Otherwise, output the coordinates of the cursor.
+	 */
+	labx = e->x;
+	laby = e->y;
+	ux = TRANX(labx);
+	uy = TRANY(laby);
+	if (datasets->next == 0)
+		mset = datasets;
+	else
+		mset = closest_point(wi, ux, uy, &mpt, &comment);
+	if (mset == 0) {
+		labptr += sprintf(labptr, "click data point");
+	} else {
+		if (mset->regression == 0) {
+			calculate_regression(wi, mset);
+		}
+		XDrawLine(display, w, fitGC, mset->x1, mset->y1,
+			  mset->x2, mset->y2);
+		/* if we have more than one set, include set name */
+		if (datasets->next != 0)
+			labptr += sprintf(labptr, "%s: ", mset->setName);
+		prec = wi->XPrecisionOffset > wi->XPrecisionOffset ? 
+			wi->XPrecisionOffset : wi->XPrecisionOffset;
+		if (isnan(mset->m))
+			labptr += sprintf(labptr, "-inf-");
+		else if (mset->b < 0.0)
+			labptr += sprintf(labptr, "y = %.*g * x - %.*g",
+					  precision, mset->m, prec, -mset->b);
+		else
+			labptr += sprintf(labptr, "y = %.*g * x + %.*g",
+					  precision, mset->m, prec, mset->b);
+	}
+	/* center label below cursor position, but avoid edge clipping */
+	len = labptr - labstr;
+	width = XTextWidth(infoFont, labstr, len);
+	height = infoFont->ascent + infoFont->descent;
+	labx -= width / 2;
+	laby += height;
+	if (labx + width > wi->width)
+		labx = wi->width - width;
+	if (labx < 0)
+		labx = 0;
+
+	/* prepare to return the label as X selection if asked */
+	strncpy(selection, labstr, MAXIDENTLEN);
+	selection[MAXIDENTLEN - 1] = '\0';
+	selectionSetTime = e->time;
+	selectionClearTime = CurrentTime;
+	XSetSelectionOwner(display, XA_PRIMARY, w, e->time);
+
+	/* save what's under the label, then output the label */
+	pm = XCreatePixmap(display, w, width, height, depth);
+	if (! pm)
+		return;
+
+	st = XGrabPointer(display, w, True, ButtonReleaseMask,
+			   GrabModeAsync, GrabModeAsync, w, cur, CurrentTime);
+	if (st != GrabSuccess) {
+		XFreePixmap(display, pm);
+		XBell(display, 0);
+		return;
+	}
+	XCopyArea(display, w, pm, infoGC, labx, laby, width, height, 0, 0);
+	XDrawImageString(display, w, infoGC, labx, laby + infoFont->ascent,
+			 labstr, len);
+
+	/* wait till button released */
+	XWindowEvent(display, w, ButtonReleaseMask, &ev);
+
+	/* erase the label */
+	XCopyArea(display, pm, w, infoGC, 0, 0, width, height, labx, laby);
+
+	XFreePixmap(display, pm);
 	XUngrabPointer(display, CurrentTime);
 }
 
@@ -1765,6 +1924,11 @@ initGCs(Window win)
 	v.foreground = normPixel ^ bgPixel;
 	v.function = GXxor;
 	echoGC = XCreateGC(display, win, GCForeground|GCFunction, &v);
+	
+	v.foreground = normPixel;
+	v.line_width = 2;
+	v.function = GXcopy;
+	fitGC = XCreateGC(display, win, GCForeground|GCFunction|GCLineWidth, &v);
 	
 	v.foreground = normPixel;
 	v.background = bgPixel;
