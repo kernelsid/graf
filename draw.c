@@ -1800,7 +1800,6 @@ DoWriteSubset(XButtonEvent *evt, LocalWin *wi, Cursor cur)
 	register Value *v;
 	register struct data_set *p;
 	register int pt;
-	register char *newline = "";
 	FILE *f;
 
 	if ((b = RubberBox(evt, wi, cur)) == 0)
@@ -1813,16 +1812,26 @@ DoWriteSubset(XButtonEvent *evt, LocalWin *wi, Cursor cur)
 
 	lx = b->loX; ly = b->loY; ux = b->hiX; uy = b->hiY;
 	for (p = datasets; p != 0; p = p->next) {
+		(void)fprintf(f, "# %s\n", p->setName);
 		v = p->dvec;
 		for (pt = p->numPoints; --pt >= 0; ++v) {
 			if (lx <= v->x && v->x <= ux &&
 			    ly <= v->y && v->y <= uy) {
-				(void)fprintf(f, "%s%g\t%g\n", newline, 
-					      v->x, v->y);
-				newline = "";
+				(void)fprintf(f, "%.15g\t%.15g", v->x, v->y);
+				if (v->w != 0) {
+					(void)fprintf(f, "\t%.15g", v->w);
+					if (v->h != 0)
+						(void)fprintf(f, "\t%.15g",
+							      v->h);
+				} else if (v->h != 0)
+					(void)fprintf(f, "\t0\t%.15g", v->h);
+				if (v->comment)
+					(void)fprintf(f, "\t# %s\n",
+						      v->comment);
+				else
+					(void)fprintf(f, "\n");
 			}
 		}
-		newline = "\n";
 	}
 	(void)fclose(f);
 }
