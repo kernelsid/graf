@@ -421,6 +421,9 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 		n = (int) floor((wi->UsrOppX - Xstart) / Xincr);
 		Xend = Xstart + n * Xincr;
 		Xoffset = 0.0;
+		expX = 9;
+		exp = (int) floor(nlog10(Xincr));
+		wi->XPrecisionOffset = ((expX - exp) / 3) * 3;
 	} else {
 		Xstart = ceil(wi->UsrOrgX / Xincr) * Xincr;
 		if (Xstart == -0.0) Xstart = 0.0;
@@ -1326,7 +1329,7 @@ DoDistance(XButtonEvent *e, LocalWin *wi, Cursor cur)
 		/* x axis appears to be a timestamp, print as date & time */
 		time_t xsec = (time_t)ux;
 		struct tm xtm;
-		int prec = wi->XPrecisionOffset - 4;
+		int prec = wi->XPrecisionOffset - 6;
 		
 		if (localTime)
 			localtime_r(&xsec, &xtm);
