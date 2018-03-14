@@ -222,7 +222,7 @@ usage(void)
 usage: graf [-B] [-c] [-D] [-L] [-e] [-m] [-M] [-n] [-o] [-p] [-r] [-R] [-s]\n\
             [-S] [-t] [-u] [-x x1,x2] [-y y1,y2] [-l x] [-l y] [-N label]\n\
             [-T title] [-d host:display] [-f font] [-g geometry] [ file ... ]\n\
-\nFonts must be fixed width.\n\
+\n\
 -B    Draw bar graph\n\
 -c    Don't use off-screen pixmaps to enhance screen redraws\n\
 -D    Interpret X values as timestamps and label axis with date and time\n\
@@ -241,7 +241,9 @@ usage: graf [-B] [-c] [-D] [-L] [-e] [-m] [-M] [-n] [-o] [-p] [-r] [-R] [-s]\n\
 -S    Set scale for slope display\n\
 -t    Draw tick marks instead of full grid\n\
 -T    Graph title\n\
--u    Input files are ulaw encoded\n";
+-u    Input files are ulaw encoded\n\
+\n\
+Type ?, F1 or Ctrl-H in the window for a list of mouse & keyboard functions.\n";
 	fputs(use, stderr);
 	exit(1);
 }

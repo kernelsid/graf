@@ -37,6 +37,7 @@ typedef struct local_win {
 	double YUnitsPerPixel;		/* Y Axis scale factor */
 	int XPrecisionOffset;		/* Extra precision for X axis offset */
 	int YPrecisionOffset;		/* Extra precision for X axis offset */
+	int help;			/* Flag indicating Help window */
 	struct plotflags flags;
 	Pixmap cache;		/* off-screen redraw cache */
 	XRectangle clip;
@@ -47,7 +48,7 @@ typedef struct local_win {
 
 extern XFontStruct *axisFont;	/* Font for axis labels */
 extern XFontStruct *infoFont;	/* Font for info popup labels */
-extern XFontStruct *titleFont;	/* Font for graph title */
+extern XFontStruct *titleFont;	/* Font for graph and help window titles */
  
 extern int depth;
 extern Display *display;

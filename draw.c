@@ -936,6 +936,150 @@ DrawLegend(LocalWin *wi, Window win)
 	}
 }
 
+static char *help[] = {
+    "\bMouse Functions",
+    "",
+    "Hold shift-ctrl-left: show (X,Y) coordinates at cursor",
+    "Hold shift-left: if on a data point, also show set label, ordinal, comment",
+    "Hold left: also decode X coordinate as GMT/local timestamp if after 1999",
+    "Drag left: show a triangle labeled with delta X, delta Y and slope values",
+    " (displayed string is set as X11 primary selection to paste in some other",
+    " X11 window using middle mouse button)",
+    "",
+    "Drag middle: show rubber-band line with slope value",
+    "Hold shift-middle on data point: draw regression line, show formula for it",
+    " (formula set as X11 primary selection; window redraw erases the line)",
+    "",
+    "Drag right: create new window with zoomed view of points spanned",
+    "Drag shift-right: write xgraph.tmp containing subset of points spanned",
+    "",
+    "",
+    "\bKeystroke Commands",
+    "",
+    "These commands are not case sensitive and can be typed anywhere.",
+    "",
+    "    0 - 9	Toggles hiding of the Nth dataset; with Ctrl, N+10th",
+    "    E	Toggles showing error bars (if dataset includes them)",
+    "    F	Toggle drawing filled rectangles (for four-value data sets)",
+    "    G or T	Toggles showing the grid versus just tick marks",
+    "    H	Toggles drawing a vertical line from Y=0 to each data point",
+    "    L	Toggles displaying lines between points",
+    "    M	Toggles showing data point marks",
+    "    O	Toggles showing graph outline",
+    "    P	Toggles between single pixel and icon data point marks",
+    "    Q	Closes the current window",
+    "    R	Toggle drawing rectangles (for four-value data sets)",
+    "    ? or F1	Pop up this Help window",
+    "    Ctrl-C	Quits the program",
+    "    Ctrl-D	Closes the current window",
+    "    Ctrl-H	Pop up this Help window",
+    "    Ctrl-L	Redraw the window",
+    "",
+    "When hiding of a dataset is toggled off, the dataset is redrawn on top",
+    "of the other datasets.  Ctrl-L will restore the original drawing order.",
+    0
+};
+static int help_width, tab_width;
+
+/*
+ * Scan the help text to measure how large a window is needed to contain it.
+ * Also measure the space needed before the tab stop for the keystroke list.
+ */
+int
+MeasureHelp()
+{
+	char **p;
+	char *s, *tab;
+	int len, aftertab, width, height, w, h;
+	XFontStruct *font;
+
+	h = axisFont->ascent + axisFont->descent;
+	tab_width = 0;
+	aftertab = 0;
+	width = 0;
+	height = PADDING * 4;
+	
+	for (p = help; *p; ++p) {
+		s = *p;
+		if (!*s) {
+			height += h/2;	/* half spacing for blank lines */
+			continue;
+		}
+		if (*s == '\b') {
+			++s;
+			font = titleFont;
+		} else
+			font = axisFont;
+		tab = index(s, '\t');
+		if (tab) {
+			w = XTextWidth(font, s, tab-s);
+			if (w > tab_width)
+				tab_width = w;
+			s = tab + 1;
+		}
+		len = strlen(s);
+		height += h;
+		w = XTextWidth(font, s, len);
+		if (tab) {
+			if (w > aftertab)
+				aftertab = w;
+		} else {
+			if (w > width)
+				width = w;
+		}
+	}
+	tab_width += PADDING*5;
+	if (tab_width + aftertab > width)
+		width = tab_width + aftertab;
+	width += PADDING*4;
+	help_width = width;
+	return (width << 16) | height;
+}
+
+/*
+ * This draws help text explaining the available runtime operations
+ * in a separate Help window when invoked by '?', Ctrl-H or F1.
+ */
+static void
+DrawHelp(LocalWin *wi, Window win)
+{
+	char **p;
+	char *s, *tab;
+	int len, w, h, x, y;
+	GC gc;
+
+	h = axisFont->ascent + axisFont->descent;
+	y = PADDING;
+
+	for (p = help; *p; ++p) {
+		s = *p;
+		if (!*s) {
+			y += h/2;	/* half spacing for blank lines */
+			continue;
+		}
+		y += h;
+		len = strlen(s);
+		if (*s == '\b') {
+			++s;
+			--len;
+			w = XTextWidth(titleFont, s, len);
+			x = (help_width - w) / 2;
+			gc = titleGC;
+		} else {
+			x = PADDING * 2;
+			gc = textGC;
+			tab = index(s, '\t');
+			if (tab) {
+				XDrawString(display, win, gc, x, y, s, tab-s);
+				x += tab_width;
+				s = tab + 1;
+				len = strlen(s);
+			}
+		}
+		XDrawString(display, win, gc, x, y, s, len);
+	}
+}
+
 int cflag;
 
 /*
@@ -949,6 +1093,11 @@ DrawWindow(Window win, LocalWin *wi)
 	           		/* Window to draw in */
 	             	/* Window information */
 {
+	if (wi->help) {
+		DrawHelp(wi, win);
+		return;
+	}
+
 	/* Figure out the transformation constants */
 	if (TransformCompute(wi)) {
 

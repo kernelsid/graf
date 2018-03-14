@@ -46,6 +46,7 @@ static void DoSelection(XSelectionRequestEvent *);
 void xdefaults(struct plotflags *);
 int DataSetHidden(LocalWin *wi, int setno);
 static Window main_win;
+static Window help_win;
 static Atom wm_delete_window;
 
 /* VARARGS */
@@ -62,6 +63,7 @@ extern void DoWriteSubset(XButtonEvent *evt, LocalWin *wi, Cursor cur);
 extern int HandleZoom(XButtonEvent *evt, LocalWin *wi, Cursor cur);
 extern void DrawWindow(Window win, LocalWin *wi);
 extern void DrawSetNo(LocalWin *wi, Window win, int setno);
+extern int MeasureHelp();
 
 extern char *progname;
 char *geometry = "=600x512";	/* Geometry specification */
@@ -80,7 +82,7 @@ int text2Color;		/* Second-level date label color */
 int text3Color;		/* Third-level date label color */
 XFontStruct *axisFont;	/* Font for axis labels */
 XFontStruct *infoFont;	/* Font for info popup labels */
-XFontStruct *titleFont;	/* Font for graph title */
+XFontStruct *titleFont;	/* Font for graph and help window titles */
 static Cursor crossCursor;
 static Cursor zoomCursor;
 int precision = 4;
@@ -180,18 +182,10 @@ initSizeHints(LocalWin *wi)
 /*
  */
 Window
-createWindow(LocalWin *wi)
+createWindow(LocalWin *wi, u_long wamask, XSetWindowAttributes wattr)
 {
-	XSetWindowAttributes wattr;
-	u_long wamask;
 	Window win;
 	XWMHints wmhints;
-
-	wamask = CWBackPixel|CWBorderPixel|CWCursor|CWEventMask;
-	wattr.background_pixel = bgPixel;
-	wattr.border_pixel = bdrPixel;
-	wattr.cursor = crossCursor;
-	wattr.event_mask = ExposureMask|KeyPressMask|KeyReleaseMask|ButtonPressMask;
 
 	win = XCreateWindow(display, RootWindow(display, screen),
 			    wi->sizehints.x, wi->sizehints.y,
@@ -216,6 +210,76 @@ createWindow(LocalWin *wi)
 }
 
 /*
+ * Creates a special window to display help text describing the runtime
+ * operations available using the keyboard and mouse.  Only one such window
+ * will be created.
+ */
+Window 
+HelpWindow(LocalWin *parent)
+{
+	u_long wamask;
+	XSetWindowAttributes wattr;
+	Window win;
+	LocalWin *wi;
+	struct plotflags flags = { 0 };
+	int size, w, h;
+	Window root, decs, ch, *kids;
+	unsigned int nkids;	
+        int rx, ry;
+        unsigned int rw, rh;
+        unsigned int bw;
+        unsigned int d;
+
+	wi = (LocalWin *)malloc(sizeof(LocalWin));
+	if (wi == 0)
+		error("out of memory");
+		
+	
+	size = MeasureHelp();
+	w = size >> 16;
+	h = size & 0xFFFF;
+
+	wi->help = 1;
+	wi->flags = flags;
+	wi->width = wi->height = -1;
+	wi->cache = 0;
+	wi->sizehints = parent->sizehints;
+	wi->sizehints.width = w;
+	wi->sizehints.height = h;
+	wi->sizehints.flags |= PMinSize|PMaxSize|PBaseSize;
+	wi->sizehints.min_width = w;
+	wi->sizehints.min_height = h;
+	wi->sizehints.max_width = w;
+	wi->sizehints.max_height = h;
+	wi->sizehints.base_width = w;
+	wi->sizehints.base_height = h;
+
+	if (XQueryTree(display, parent->win, &root, &decs, &kids, &nkids) &&
+	    XGetGeometry(display, decs, &root, &rx, &ry, &rw, &rh, &bw, &d) &&
+	    XTranslateCoordinates(display, decs, root, rw, 0, &rx, &ry, &ch)) {
+		wi->sizehints.flags |= PPosition;
+		wi->sizehints.x = rx + 1;
+		wi->sizehints.y = ry;
+	}
+
+	wamask = CWBackPixel|CWBorderPixel|CWEventMask;
+	wattr.background_pixel = bgPixel;
+	wattr.border_pixel = bdrPixel;
+	wattr.event_mask = ExposureMask|KeyReleaseMask;
+
+	win = createWindow(wi, wamask, wattr);
+	if (win != 0) {
+		char win_name[MAXIDENTLEN];
+		snprintf(win_name, MAXIDENTLEN, "%s - Help", progname);
+		XStoreName(display, win, win_name);
+		add_winfo(win, wi);
+		XMapWindow(display, win);
+		XSetWMProtocols(display, win, &wm_delete_window, 1);
+	}
+	return win;
+}
+
+/*
  * Creates and maps a new window.  This includes allocating its local
  * structure and associating it with the XId for the window. The aspect ratio
  * is specified as the ratio of width over height.
@@ -223,6 +287,8 @@ createWindow(LocalWin *wi)
 Window 
 NewWindow(BBox *bbp, struct plotflags *flags, LocalWin *parent)
 {
+	u_long wamask;
+	XSetWindowAttributes wattr;
 	Window win;
 	LocalWin *wi;
 	double pad;
@@ -234,6 +300,7 @@ NewWindow(BBox *bbp, struct plotflags *flags, LocalWin *parent)
 	if (wi == 0)
 		error("out of memory");
 		
+	wi->help = 0;
 	wi->flags = *flags;
 
 	wi->loX = bbp->loX;
@@ -284,7 +351,15 @@ NewWindow(BBox *bbp, struct plotflags *flags, LocalWin *parent)
 		wi->hide = parent->hide;
 		copy_dflags(wi, parent);
 	}
-	win = createWindow(wi);
+
+	wamask = CWBackPixel|CWBorderPixel|CWCursor|CWEventMask;
+	wattr.background_pixel = bgPixel;
+	wattr.border_pixel = bdrPixel;
+	wattr.cursor = crossCursor;
+	wattr.event_mask = ExposureMask|KeyPressMask|KeyReleaseMask|
+		ButtonPressMask;
+
+	win = createWindow(wi, wamask, wattr);
 	if (win != 0) {
 		add_winfo(win, wi);
 		XMapWindow(display, win);
@@ -356,6 +431,7 @@ xmain(struct plotflags *flags, int xlimits, int ylimits, double loX, double loY,
 		error("cannot map window");
 	initGCs(main_win);
 	num_wins = 1;
+	help_win = 0;
 
 	while (num_wins > 0) {
 		XEvent e;
@@ -404,7 +480,10 @@ xmain(struct plotflags *flags, int xlimits, int ylimits, double loX, double loY,
 		case ClientMessage:
 			/* Delete this window */
 			DeleteWindow(win, wi);
-			--num_wins;
+			if (win == help_win)
+				help_win = 0;
+			else
+				--num_wins;
 			break;
 
 		default:
@@ -474,10 +553,15 @@ DoKeyPress(Window win, LocalWin *wi, XKeyEvent *xk, int type)
 	int setno;
 #define	MAXKEYS 32
 	char keys[MAXKEYS];
+	KeySym keysym;
 
-	n = XLookupString(xk, keys, sizeof(keys), (KeySym *)0, 
+	n = XLookupString(xk, keys, sizeof(keys), &keysym, 
 			  (XComposeStatus *)0);
 
+	if (n == 0 && keysym == XK_F1) {	/* Translate F1 to '?' */
+		keys[0] = '?';
+		n = 1;
+	}
 	get_dflags(wi, &flags);
 	for (k = 0; k < n; ++k) {
 		if (type == KeyRelease) {
@@ -490,7 +574,11 @@ DoKeyPress(Window win, LocalWin *wi, XKeyEvent *xk, int type)
 			case 'Q':
 				/* Delete this window */
 				DeleteWindow(win, wi);
-				return -1;
+				if (win == help_win) {
+					help_win = 0;
+					return 0;
+				} else
+					return -1;
 			}
 			continue;
 		}
@@ -625,6 +713,15 @@ DoKeyPress(Window win, LocalWin *wi, XKeyEvent *xk, int type)
 				break;
 			}
 			DrawSetNo(wi, win, setno);
+			break;
+
+		case '?':
+		case '\b':
+			if (help_win) {
+				XRaiseWindow(display, help_win);
+			} else {
+				help_win = HelpWindow(wi);
+			}
 			break;
 		}
 	}
