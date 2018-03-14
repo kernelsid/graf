@@ -38,6 +38,7 @@
 #include "dataset.h"
 
 #define DEFAULT_FONT "-*-helvetica-bold-r-*-*-12-*"
+#define TITLE_FONT "-*-helvetica-bold-r-*-*-14-*"
 
 static int DoKeyPress(Window, LocalWin *, XKeyEvent *, int type);
 static int DoButton(XButtonEvent *b, LocalWin *wi, Cursor zc);
@@ -79,6 +80,7 @@ int text2Color;		/* Second-level date label color */
 int text3Color;		/* Third-level date label color */
 XFontStruct *axisFont;	/* Font for axis labels */
 XFontStruct *infoFont;	/* Font for info popup labels */
+XFontStruct *titleFont;	/* Font for graph title */
 static Cursor crossCursor;
 static Cursor zoomCursor;
 int precision = 4;
@@ -756,6 +758,7 @@ xinit(char *dispname, struct plotflags *flags)
 	bdrPixel = BlackPixel(display, screen);
 	axisFont = XLoadQueryFont(display, DEFAULT_FONT);
 	infoFont = axisFont;
+	titleFont = XLoadQueryFont(display, TITLE_FONT);
 
 	/* Depends critically on whether the display has color */
 	if (bwFlag) {
@@ -807,7 +810,7 @@ xdef_font(char *id, XFontStruct **f)
 {
 	char *v = XGetDefault(display, progname, id);
 	if (v == 0)
-		v = DEFAULT_FONT;
+		return;
 	*f = XLoadQueryFont(display, v);
 	if (*f == 0)
 		error("cannot load font %s of %s", id, v);
@@ -851,6 +854,7 @@ xdefaults(struct plotflags *flags)
 	xdef_color("Text3Color", &text3Color);
 	xdef_font("LabelFont", &axisFont);
 	xdef_font("InfoFont", &infoFont);
+	xdef_font("TitleFont", &titleFont);
 	xdef_flag("Spline", &flags->spline);
 	xdef_flag("Ticks", &flags->tick);
 	xdef_flag("Markers", &flags->mark);

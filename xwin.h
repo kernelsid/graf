@@ -47,6 +47,7 @@ typedef struct local_win {
 
 extern XFontStruct *axisFont;	/* Font for axis labels */
 extern XFontStruct *infoFont;	/* Font for info popup labels */
+extern XFontStruct *titleFont;	/* Font for graph title */
  
 extern int depth;
 extern Display *display;

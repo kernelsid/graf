@@ -211,6 +211,7 @@ static GC textGC;
 static GC text2GC;
 static GC text3GC;
 static GC infoGC;
+static GC titleGC;
 static GC copyGC;
 
 double slope_scale = 1.0;
@@ -469,7 +470,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 			power += sprintf(power, " + %.0f", Ybase);
 		if (logYFlag && (expY || Yoffset != 0.0))
 			power += sprintf(power, ")");
-		XDrawString(display, win, textGC, w/2, height,
+		XDrawString(display, win, textGC, w/2, axisFont->ascent+PADDING,
 				 powerbuf, strlen(powerbuf));
 	}
 	if (dateXFlag) {
@@ -642,11 +643,13 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 			 graph_title);
 		xSetWindowName(win_name);
 		len = strlen(graph_title);
-		w = XTextWidth(axisFont, graph_title, len);
+		w = XTextWidth(titleFont, graph_title, len);
 		x = (wi->width - w) / 2;
 		if (x < 0)
 			x = 0;
-		XDrawImageString(display, win, textGC, x, height, graph_title, len);
+		XDrawImageString(display, win, titleGC, x,
+				 titleFont->ascent + PADDING/2,
+				 graph_title, len);
 	}
 
 	/* Check to see if he wants a bounding box */
@@ -1011,7 +1014,7 @@ TransformCompute(LocalWin *wi)
 	 * space we have the Y axis grid labels.
 	 */
 	maxwid = XTextWidth(axisFont, "-000.00", 7) + PADDING*2;
-	height = axisFont->ascent + axisFont->descent + PADDING;
+	height = titleFont->ascent + titleFont->descent + PADDING;
 	wi->XOrgX = maxwid;
 	wi->XOrgY = height;
 	/*
@@ -1028,6 +1031,7 @@ TransformCompute(LocalWin *wi)
 		if (tmpSize > maxName)
 			maxName = tmpSize;
 	}
+	height = axisFont->ascent + axisFont->descent + PADDING;
 	wi->XOppX = wi->width - maxName - PADDING*2 - mark_w;
 	wi->XOppY = wi->height - height - PADDING - mark_h;
 
@@ -1975,6 +1979,13 @@ initGCs(Window win)
 	v.font = infoFont->fid;
 	infoGC = XCreateGC(display, win, 
 			   GCFont|GCForeground|GCBackground|GCFunction, &v);
+
+	v.foreground = normPixel;
+	v.background = bgPixel;
+	v.function = GXcopy;
+	v.font = titleFont->fid;
+	titleGC = XCreateGC(display, win, 
+			    GCFont|GCForeground|GCBackground|GCFunction, &v);
 	if (bwFlag)
 		bwGCs(win);
 	else
