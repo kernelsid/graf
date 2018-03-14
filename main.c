@@ -42,7 +42,8 @@ extern void xinit(char *dispname, struct plotflags *flags);
 extern void xsetfont(char *name);
 extern void setsetname(register char *name);
 extern void ReadData(char *filename, int ulaw);
-extern void xmain(struct plotflags *flags, int xlimits, int ylimits, double loX, double loY, double hiX, double hiY);
+extern void xmain(struct plotflags *flags, int xlimits, int ylimits,
+		  double loX, double loY, double hiX, double hiY);
 
 char *progname;
 
@@ -81,7 +82,8 @@ main(argc, argv)
 	xinit(dispname(argc, argv), &flags);
 
 	/* Parse the argument list */
-	while ((op = getopt(argc, argv, "x:y:cerRsS:tT:mMnN:oBpd:f:g:uDLl:v")) != -1) {
+	while ((op = getopt(argc, argv,
+			    "x:y:cerRsS:tT:mMnN:oBpd:f:g:uDLl:v")) != -1) {
 		switch (op) {
 
 		default:

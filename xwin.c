@@ -316,7 +316,7 @@ DeleteWindow(Window win, LocalWin *wi)
 }
 
 /*
- * Given a standard color name,  this routine fetches the associated pixel
+ * Given a standard color name, this routine fetches the associated pixel
  * value using XGetHardwareColor.  If it can't find or allocate the color,
  * it returns NO_COLOR.
  */
@@ -335,7 +335,8 @@ GetColor(char *name)
 }
 
 void
-xmain(struct plotflags *flags, int xlimits, int ylimits, double loX, double loY, double hiX, double hiY)
+xmain(struct plotflags *flags, int xlimits, int ylimits, double loX, double loY,
+      double hiX, double hiY)
 {
 	BBox bb;
 	int num_wins;
@@ -398,7 +399,7 @@ xmain(struct plotflags *flags, int xlimits, int ylimits, double loX, double loY,
 			break;
 
 		case SelectionClear:
-			/* Nothing much to do since selection is a static buffer*/
+			/* Nothing much to do since selection buffer is static*/
 			selectionClearTime = e.xselectionclear.time;
 			break;
 		
@@ -500,7 +501,7 @@ DoKeyPress(Window win, LocalWin *wi, XKeyEvent *xk, int type)
 			continue;
 		}
 
-		/* In some environments, digit keys with control get translated */
+		/* In some environments, digit keys with Ctrl get translated */
 		switch (keys[k]) {
 		case '\000':
 			keys[k] = '2';
@@ -663,8 +664,8 @@ ConvertSelection(Window requestor, Atom target, Atom property)
 		Atom targetList[] = {xa_TARGETS, xa_MULTIPLE, xa_TIMESTAMP,
 				     XA_STRING, xa_TEXT, xa_COMPOUND_TEXT};
 
-		XChangeProperty(display, requestor, property, XA_ATOM,
-				32, PropModeReplace, (unsigned char *)targetList,
+		XChangeProperty(display, requestor, property, XA_ATOM, 32,
+				PropModeReplace, (unsigned char *)targetList,
 				sizeof(targetList)/sizeof(Atom));
 		return True;
 	}
@@ -686,9 +687,10 @@ ConvertSelection(Window requestor, Atom target, Atom property)
 			Atom property;
 		} *m;
 
-		ret = XGetWindowProperty(display, requestor, property, 0, 4*2*100, False,
-					 XA_ATOM, &actual_type, &actual_format,
-					 &nitems, &remaining, &data);
+		ret = XGetWindowProperty(display, requestor, property, 0,
+					 4*2*100, False, XA_ATOM, &actual_type,
+					 &actual_format, &nitems, &remaining,
+					 &data);
 		if (ret != Success || nitems == 0)
 			return False;
 		if (remaining > 0 || (nitems & 1) || actual_type != XA_ATOM ||
@@ -699,7 +701,8 @@ ConvertSelection(Window requestor, Atom target, Atom property)
 		nitems >>= 1;
 		m = (struct atom_pair *)data;
 		for (i = 0; i < nitems; ++i, ++m) {
-			if (!ConvertSelection(requestor, m->target, m->property)) {
+			if (!ConvertSelection(requestor, m->target,
+					      m->property)) {
 				m->property = None;
 				++nerrors;
 			}
@@ -727,7 +730,8 @@ DoSelection(XSelectionRequestEvent *re)
 	se.time = re->time;
 
 	if ((se.time == CurrentTime || se.time >= selectionSetTime) &&
-	    (selectionClearTime == CurrentTime || se.time < selectionClearTime)) {
+	    (selectionClearTime == CurrentTime ||
+	     se.time < selectionClearTime)) {
 		if (!ConvertSelection(se.requestor, se.target, se.property))
 			se.property = None;
 	}

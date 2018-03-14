@@ -346,11 +346,13 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 				Xincr = floor((Xincr+step-1)/step)*step;
 				if (Xincr > 14*1440*60) {
 					Xmonths = 1;
-					if (Xincr > 28*1440*60 && Xincr < 32*1440*60)
+					if (Xincr > 28*1440*60 &&
+					    Xincr < 32*1440*60)
 						Xincr = 32*1440*60;
 				}
 				if (Xincr > 30*1440*60)
-					Xmonths = (int) ceil(Xincr / (30.5*1440*60));
+					Xmonths = (int) ceil(Xincr /
+							     (30.5*1440*60));
 			} else {
 				if (Xincr > 240*60) {
 					Xincr = 720*60;
@@ -445,7 +447,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	}
 
 	/*
-	 * With the powers computed,  we can draw the axis labels.
+	 * With the powers computed, we can draw the axis labels.
 	 */
 	if (expY || logYFlag || Yoffset != 0.0) {
 		char powerbuf[100];
@@ -543,7 +545,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 		XDrawString(display, win, textGC, x, y, powerbuf, len);
 	}
 	/*
-	 * Now,  we can figure out the grid line labels and grid lines
+	 * Now, we can figure out the grid line labels and grid lines
 	 */
 	Yend = wi->UsrOppY - Yoffset;
 	for (Yindex = Ystart; Yindex <= Yend; Yindex += Yincr) {
@@ -610,7 +612,8 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 					++xtm.tm_year;
 				}
 				xtm.tm_isdst = -1;
-				Xindex = localTime ? mktime(&xtm) : timegm(&xtm);
+				Xindex = localTime ? mktime(&xtm) :
+					timegm(&xtm);
 			} else {
 				xsec = (time_t)Xindex;
 				if (localTime && (Xincr > 60*60)) {
@@ -635,7 +638,8 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	/* Center the title near the top of the graph */
 	if (graph_title) {
 		char win_name[MAXIDENTLEN];
-		snprintf(win_name, MAXIDENTLEN, "%s - %s", progname, graph_title);
+		snprintf(win_name, MAXIDENTLEN, "%s - %s", progname,
+			 graph_title);
 		xSetWindowName(win_name);
 		len = strlen(graph_title);
 		w = XTextWidth(axisFont, graph_title, len);
@@ -647,9 +651,8 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 
 	/* Check to see if he wants a bounding box */
 	if (wi->flags.bb)
-		/* XXX I thinkwe can use wi->clip here! */
-		XDrawRectangle(display, win, textGC, wi->XOrgX, wi->XOrgY,
-			       wi->XOppX - wi->XOrgX, wi->XOppY - wi->XOrgY);
+		XDrawRectangle(display, win, textGC, wi->clip.x, wi->clip.y,
+			       wi->clip.width, wi->clip.height);
 }
 
 void
@@ -684,7 +687,8 @@ DrawSet(LocalWin *wi, Window win, struct data_set *p)
 					rec->width = -w;
 					rec->x = ver->x + w;
 					if (rec->x < MIN_X11_COOR) {
-						rec->width = MIN_X11_COOR - rec->x;
+						rec->width = MIN_X11_COOR -
+							rec->x;
 						rec->x = MIN_X11_COOR;
 					}
 				} else {
@@ -698,7 +702,8 @@ DrawSet(LocalWin *wi, Window win, struct data_set *p)
 					rec->height = h;
 					rec->y = ver->y - h;
 					if (rec->y < MIN_X11_COOR) {
-						rec->height = MIN_X11_COOR - rec->y;
+						rec->height = MIN_X11_COOR -
+							rec->y;
 						rec->y = MIN_X11_COOR;
 					}
 				}
@@ -784,28 +789,32 @@ DrawSet(LocalWin *wi, Window win, struct data_set *p)
 			 */
 			bp = vp;
 			if (vp->x < loX && vp->x + vp->w < loX) {
-				while (vp->x < loX && vp->x + vp->w < loX && vp < ep)
+				while (vp->x < loX && vp->x + vp->w < loX &&
+				       vp < ep)
 					++vp;
 				if (beyond)
 					op = vp;
 				if (vp < ep)
 					--vp;
 			} else if (vp->x > hiX && vp->x + vp->w > hiX) {
-				while (vp->x > hiX && vp->x + vp->w > hiX && vp < ep)
+				while (vp->x > hiX && vp->x + vp->w > hiX &&
+				       vp < ep)
 					++vp;
 				if (beyond)
 					op = vp;
 				if (vp < ep)
 					--vp;
 			} else if (vp->y < loY && vp->y + vp->h < loY) {
-				while (vp->y < loY && vp->y + vp->h < loY && vp < ep)
+				while (vp->y < loY && vp->y + vp->h < loY &&
+				       vp < ep)
 					++vp;
 				if (beyond)
 					op = vp;
 				if (vp < ep)
 					--vp;
 			} else if (vp->y > hiY && vp->y + vp->h > hiY) {
-				while (vp->y > hiY && vp->y + vp->h > hiY && vp < ep)
+				while (vp->y > hiY && vp->y + vp->h > hiY &&
+				       vp < ep)
 					++vp;
 				if (beyond)
 					op = vp;
@@ -1663,8 +1672,8 @@ DoDistance(XButtonEvent *e, LocalWin *wi, Cursor cur)
 			ux = cx - sx;
 			uy = sy - cy;
 			if (ux != 0.)
-				(void)sprintf(labstr, "%.*g", 
-					      precision, uy / ux * sxy * slope_scale);
+				(void)sprintf(labstr, "%.*g", precision,
+					      uy / ux * sxy * slope_scale);
 			else
 				(void)sprintf(labstr, "-inf-");
 
