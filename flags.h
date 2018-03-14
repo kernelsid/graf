@@ -28,7 +28,7 @@ struct plotflags {
 	char spline;		/* Draw lines with spline */
 	char tick;		/* Don't draw full grid */
 	char mark;		/* Draw marks at pochars */
-	char bb;		/* Whether to draw bb */
+	char outline;		/* Whether to draw graph outline */
 	char nolines;		/* Don't draw lines */
 	char pixmarks;		/* Draw pixel markers */
 	char bar;		/* Draw bar graph */

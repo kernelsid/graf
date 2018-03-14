@@ -652,8 +652,8 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 				 graph_title, len);
 	}
 
-	/* Check to see if he wants a bounding box */
-	if (wi->flags.bb)
+	/* Check to see if he wants an outline */
+	if (wi->flags.outline)
 		XDrawRectangle(display, win, textGC, wi->clip.x, wi->clip.y,
 			       wi->clip.width, wi->clip.height);
 }

@@ -557,11 +557,10 @@ DoKeyPress(Window win, LocalWin *wi, XKeyEvent *xk, int type)
 			DrawWindow(win, wi);
 			break;
 
-		case 'b':
-		case 'B':
-			flags.bb ^= 1;
-			set_dflags(wi, &flags);
-			XClearWindow(display, win);
+		case 'o':
+		case 'O':
+			if ((wi->flags.outline ^= 1) == 0)
+				XClearWindow(display, win);
 			DrawWindow(win, wi);
 			break;
 
@@ -850,7 +849,7 @@ xdefaults(struct plotflags *flags)
 	xdef_flag("Spline", &flags->spline);
 	xdef_flag("Ticks", &flags->tick);
 	xdef_flag("Markers", &flags->mark);
-	xdef_flag("BoundBox", &flags->bb);
+	xdef_flag("Outline", &flags->outline);
 	xdef_flag("NoLines", &flags->nolines);
 	xdef_flag("PixelMarkers", &flags->pixmarks);
 	xdef_string("geometry", &geometry);

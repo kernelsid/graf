@@ -140,7 +140,7 @@ main(argc, argv)
 			break;
 
 		case 'o':
-			flags.bb = 1;
+			flags.outline = 1;
 			break;
 
 		case 'B':
