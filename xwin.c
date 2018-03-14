@@ -273,14 +273,6 @@ NewWindow(BBox *bbp, struct plotflags *flags, LocalWin *parent)
 		}
 	}
 
-	/* Add 4% padding to bounding box (div by 50 yeilds 2%) */
-	pad = (wi->hiX - wi->loX) / 50.0;
-	wi->loX -= pad;
-	wi->hiX += pad;
-	pad = (wi->hiY - wi->loY) / 50.0;
-	wi->loY -= pad;
-	wi->hiY += pad;
-
 	if (parent == 0) {
 		initSizeHints(wi);
 		wi->hide = 0;

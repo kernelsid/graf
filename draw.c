@@ -1007,6 +1007,7 @@ TransformCompute(LocalWin *wi)
 	double bbCenX, bbCenY, bbHalfWidth, bbHalfHeight;
 	int maxName;
 	int maxwid, height;
+	int pad = (TICKLENGTH + PADDING)*2 + mark_w;  /* pad inside outline */
 
 	/*
 	 * First,  we figure out the origin in the X window.  Above the space
@@ -1035,7 +1036,7 @@ TransformCompute(LocalWin *wi)
 	wi->XOppX = wi->width - maxName - PADDING*2 - mark_w;
 	wi->XOppY = wi->height - height - PADDING - mark_h;
 
-	if ((wi->XOrgX >= wi->XOppX) || (wi->XOrgX >= wi->XOppY)) {
+	if ((wi->XOrgX + pad >= wi->XOppX) || (wi->XOrgX + pad >= wi->XOppY)) {
 		(void)fprintf(stderr, "Drawing area is too small\n");
 		return 0;
 	}
@@ -1044,9 +1045,9 @@ TransformCompute(LocalWin *wi)
 	 * units per pixel using the data set bounding box.
 	 */
 	wi->XUnitsPerPixel = (wi->hiX - wi->loX) /
-				(double)(wi->XOppX - wi->XOrgX);
+				(double)(wi->XOppX - wi->XOrgX - pad);
 	wi->YUnitsPerPixel = (wi->hiY - wi->loY) /
-				(double)(wi->XOppY - wi->XOrgY);
+				(double)(wi->XOppY - wi->XOrgY - pad);
 
 	/*
 	 * Find origin in user coordinate space.  We keep the center of the
