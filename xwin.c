@@ -348,14 +348,14 @@ xmain(struct plotflags *flags, int xlimits, int ylimits, double loX, double loY,
 		bb.loY = loY;
 		bb.hiY = hiY;
 	}
+	zoomCursor = XCreateFontCursor(display, XC_sizing);
+	crossCursor = XCreateFontCursor(display, XC_crosshair);
 	wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", False);
 	main_win = NewWindow(&bb, flags, (LocalWin *)0);
 	if (main_win == 0)
 		error("cannot map window");
 	initGCs(main_win);
 	num_wins = 1;
-	zoomCursor = XCreateFontCursor(display, XC_sizing);
-	crossCursor = XCreateFontCursor(display, XC_crosshair);
 
 	while (num_wins > 0) {
 		XEvent e;
