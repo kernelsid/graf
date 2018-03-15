@@ -216,6 +216,7 @@ static GC copyGC;
 
 double slope_scale = 1.0;
 char *graph_title = NULL;
+static int maxName = 0;
 
 static int
 WriteDate(str, val)
@@ -898,40 +899,21 @@ static void
 DrawLegend(LocalWin *wi, Window win)
 {
 	int spot, maxlen, len, height, x0, x1;
-	char *maxstr;
 	struct data_set *p;
 
 	height = axisFont->ascent + axisFont->descent;
 	maxlen = 0;
 	x0 =  wi->XOppX + PADDING + mark_w;
-	/* First pass draws the text and marks */
-	spot = wi->XOrgY + height + PADDING;
-	maxstr = NULL;
-	for (p = datasets; p != 0; p = p->next) {
-		/* Meets the criteria */
-		len = strlen(p->setName);
-		if (len > maxlen) {
-			maxlen = len;
-			maxstr = p->setName;
-		}
-		XDrawString(display, win, textGC, 
-			    x0, spot + 2, p->setName, len);
-		XSetClipOrigin(display, p->mGC,
-			       x0 - mark_w,
-			       spot - mark_h);
-		XFillRectangle(display, win, p->mGC,
-			       x0 - mark_w, 
-			       spot - mark_h,
-			       mark_w, mark_h);
-		spot += 2 * height + PADDING;
-	}
-
-	/* second pass draws the lines over text */
+	x1 = x0 + maxName;
 	spot = wi->XOrgY + PADDING;
-	x0 = wi->XOppX + PADDING + mark_w;
-	x1 = x0 + XTextWidth(axisFont, maxstr, maxlen) + PADDING;
 	for (p = datasets; p != 0; p = p->next) {
 		XDrawLine(display, win, (GC)p->GC, x0, spot, x1, spot);
+		XDrawString(display, win, textGC, x0, spot + height + 2,
+			    p->setName, strlen(p->setName));
+		XSetClipOrigin(display, p->mGC, x0 - mark_w,
+			       spot + height - mark_h);
+		XFillRectangle(display, win, p->mGC, x0 - mark_w, 
+			       spot + height - mark_h, mark_w, mark_h);
 		spot += 2 * height + PADDING;
 	}
 }
@@ -1155,7 +1137,6 @@ TransformCompute(LocalWin *wi)
 {
 	register struct data_set *p;
 	double bbCenX, bbCenY, bbHalfWidth, bbHalfHeight;
-	int maxName;
 	int maxwid, height;
 	int pad = (TICKLENGTH + PADDING)*2 + mark_w;  /* pad inside outline */
 
