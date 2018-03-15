@@ -201,6 +201,8 @@ main(argc, argv)
 			break;
 		}
 	}
+	if (logXFlag && dateXFlag)
+		error("options -l x and -D or -L are incompatible");
 	/* Read the data into the data sets */
 	if (optind == argc)
 		ReadData((char *)0, ulawflag);
