@@ -1141,12 +1141,13 @@ ResizeWindow(Window win, LocalWin *wi)
 }
 
 /*
- * This routine figures out how to draw the axis labels and grid lines.
- * Currently,  the system only supports linear axes.  Axis labels are drawn
- * in engineering notation.  The power of the axes are labeled in the normal
- * axis labeling spots.  The routine also figures out the necessary
- * transformation information for the display of the points (it touches
- * XOrgX, XOrgY, UsrOrgX, UsrOrgY, and UnitsPerPixel).
+ * This routine figures out how to draw the axis labels and grid lines.  The
+ * axes must be linear, but logarithmic graphs are supported by taking the log
+ * of the data points as they are read and then labeling the axis with the
+ * resulting exponent values plus a label "x 10^y" at the top or bottom
+ * indicating that the labels are to be interpreted as exponents.  This routine
+ * also figures out the necessary transformation information for the display of
+ * the points (it touches XOrgX, XOrgY, UsrOrgX, UsrOrgY, and UnitsPerPixel).
  */
 int 
 TransformCompute(LocalWin *wi)
