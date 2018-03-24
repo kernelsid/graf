@@ -83,6 +83,7 @@ static char *marks[] = {
 #define PADDING 	2
 #define PIXVALUE(set) 	(AllAttrs[(set) % MAXATTR].pixelValue)
 
+static int pad = TICKLENGTH + PADDING + mark_w/2;  /* pad inside outline */
 static char *date_formats[] = {"", "%Y", "%Y-%m-%d", "%Y-%m-%d %H:%M:",
 			       "%Y-%m-%d %H:%M:%S."};
 
@@ -936,12 +937,15 @@ static char *help[] = {
     "Drag right: create new window with zoomed view of points spanned",
     "Drag shift-right: write xgraph.tmp containing subset of points spanned",
     "",
+    "Scroll wheel up/down/left/right: pan the graph view",
+    "Shift scroll wheel up/down: zoom the graph view in/out at the cursor",
+    "",
     "",
     "\bKeystroke Commands",
     "",
     "These commands are not case sensitive and can be typed anywhere.",
     "",
-    "    0 - 9	Toggles hiding of the Nth dataset; with Ctrl, N+10th",
+    "    0 - 9	Toggles hiding of the Nth dataset; with ctrl, N+10th",
     "    E	Toggles showing error bars (if dataset includes them)",
     "    F	Toggle drawing filled rectangles (for four-value data sets)",
     "    G or T	Toggles showing the grid versus just tick marks",
@@ -953,6 +957,7 @@ static char *help[] = {
     "    Q	Closes the current window",
     "    R	Toggle drawing rectangles (for four-value data sets)",
     "    ? or F1	Pop up this Help window",
+    "    Arrows	Pan the graph view; up/down with shift zooms in/out",
     "    Ctrl-C	Quits the program",
     "    Ctrl-D	Closes the current window",
     "    Ctrl-H	Pop up this Help window",
@@ -1123,6 +1128,188 @@ ResizeWindow(Window win, LocalWin *wi)
 	DrawWindow(win, wi);
 }
 
+void
+PanWindow(LocalWin *wi, unsigned long direction)
+{
+	Window win = wi->win;
+	double opposite = naturalScroll ? -1.0 : 1.0;
+	double Xspan = wi->hiX - wi->loX;
+	double Yspan = wi->hiY - wi->loY;
+	double Xjump = opposite * Xspan / 10.0;
+	double Yjump = opposite * Yspan / 10.0;
+	double Xshift = opposite * Xspan / 100.0;
+	double Yshift = opposite * Yspan / 100.0;
+
+	switch(direction) {
+	case Button4:
+		wi->loY += Yshift;
+		wi->hiY += Yshift;
+		break;
+
+	case Button5:
+		wi->loY -= Yshift;
+		wi->hiY -= Yshift;
+		break;
+
+	case Button5+1:
+		wi->loX -= Xshift;
+		wi->hiX -= Xshift;
+		break;
+
+	case Button5+2:
+		wi->loX += Xshift;
+		wi->hiX += Xshift;
+		break;
+
+	case XK_Up:
+		wi->loY += Yjump;
+		wi->hiY += Yjump;
+		break;
+
+	case XK_Down:
+		wi->loY -= Yjump;
+		wi->hiY -= Yjump;
+		break;
+
+	case XK_Left:
+		wi->loX -= Xjump;
+		wi->hiX -= Xjump;
+		break;
+
+	case XK_Right:
+		wi->loX += Xjump;
+		wi->hiX += Xjump;
+		break;
+	}
+	if (wi->loX < overall_bb.loX) {
+		double fix = overall_bb.loX - wi->loX;
+		wi->loX += fix;
+		wi->hiX += fix;
+	}
+	if (wi->hiX > overall_bb.hiX) {
+		double fix = wi->hiX - overall_bb.hiX;
+		wi->loX -= fix;
+		wi->hiX -= fix;
+	}
+	if (wi->loY < overall_bb.loY) {
+		double fix = overall_bb.loY - wi->loY;
+		wi->loY += fix;
+		wi->hiY += fix;
+	}
+	if (wi->hiY > overall_bb.hiY) {
+		double fix = wi->hiY - overall_bb.hiY;
+		wi->loY -= fix;
+		wi->hiY -= fix;
+	}
+	XClearWindow(display, win);
+	DrawWindow(win, wi);
+}
+
+void
+ZoomWindow(XButtonEvent *b, LocalWin *wi, unsigned long direction)
+{
+	Window win = wi->win;
+	double shift, inout, north, south, west, east, portion;
+	double loX, hiX, loY, hiY;
+
+	if (direction == Button5+1 || direction == Button5+2)
+		return;
+	/* Calculate amount to change in all four directions from point. */
+	if (b) {
+		shift = (wi->UsrOppY - wi->UsrOrgY) / 50.0;
+		north = shift * (b->y - wi->XOrgY - pad) / wi->clip.height;
+		south = shift * (wi->XOppY - b->y - pad) / wi->clip.height;
+		shift = (wi->UsrOppX - wi->UsrOrgX) / 50.0;
+		west = shift * (b->x - wi->XOrgX - pad) / wi->clip.width;
+		east = shift * (wi->XOppX - b->x - pad) / wi->clip.width;
+	} else {
+		north = south = (wi->hiY - wi->loY) / 10.0;
+		west = east = (wi->hiX - wi->loX) / 10.0;
+	}
+	inout = 1.0;
+	if (direction == Button5 || direction == XK_Down)
+		inout = -1.0;
+	loX = wi->loX + inout * west;
+	hiX = wi->hiX - inout * east;
+	loY = wi->loY + inout * south;
+	hiY = wi->hiY - inout * north;
+
+	/* Don't allow zooming out past overall bounding box.  Some of this
+	 * may seem redundant, but it's there to avoid error accumulation. */
+	if ((hiX - loX) > (overall_bb.hiX - overall_bb.loX)) {
+		if ((hiY - loY) > (overall_bb.hiY - overall_bb.loY)) {
+			loX = overall_bb.loX;
+			hiX = overall_bb.hiX;
+			loY = overall_bb.loY;
+			hiY = overall_bb.hiY;
+		} else {
+			portion = ((overall_bb.hiX - overall_bb.loX) -
+				   (wi->hiX - wi->loX)) /
+				((hiX - loX) - (wi->hiX - wi->loX));
+			loX = overall_bb.loX;
+			hiX = overall_bb.hiX;
+			loY = wi->loY + inout * south * portion;
+			hiY = wi->hiY - inout * north * portion;
+			if (loY < overall_bb.loY) {
+				hiY += overall_bb.loY - loY;
+				loY = overall_bb.loY;
+				if (hiY > overall_bb.hiY)
+					hiY = overall_bb.hiY;
+			} else if (hiY > overall_bb.hiY) {
+				loY -= loY - overall_bb.loY;
+				hiY = overall_bb.hiY;
+				if (loY < overall_bb.loY)
+					loY = overall_bb.loY;
+			}
+		}
+	} else if ((hiY - loY) > (overall_bb.hiY - overall_bb.loY)) {
+		portion = ((overall_bb.hiY - overall_bb.loY) -
+			   (wi->hiY - wi->loY)) /
+			((hiY - loY) - (wi->hiY - wi->loY));
+		loY = overall_bb.loY;
+		hiY = overall_bb.hiY;
+		loX = wi->loX + inout * west * portion;
+		hiX = wi->hiX - inout * east * portion;
+		if (loX < overall_bb.loX) {
+			hiX += overall_bb.loX - loX;
+			loX = overall_bb.loX;
+			if (hiX > overall_bb.hiX)
+				hiX = overall_bb.hiX;
+		} else if (hiX > overall_bb.hiX) {
+			loX -= loX - overall_bb.loX;
+			hiX = overall_bb.hiX;
+			if (loX < overall_bb.loX)
+				loX = overall_bb.loX;
+		}
+	}
+
+	/* If we have zoomed out to hit an edge, shift to the edge. */
+	if (loX < overall_bb.loX) {
+		double fix = overall_bb.loX - loX;
+		loX += fix;
+		hiX += fix;
+	} else if (hiX > overall_bb.hiX) {
+		double fix = hiX - overall_bb.hiX;
+		loX -= fix;
+		hiX -= fix;
+	}
+	if (loY < overall_bb.loY) {
+		double fix = overall_bb.loY - loY;
+		loY += fix;
+		hiY += fix;
+	} else if (hiY > overall_bb.hiY) {
+		double fix = hiY - overall_bb.hiY;
+		loY -= fix;
+		hiY -= fix;
+	}
+	wi->loX = loX;
+	wi->hiX = hiX;
+	wi->loY = loY;
+	wi->hiY = hiY;
+	XClearWindow(display, win);
+	DrawWindow(win, wi);
+}
+
 /*
  * This routine figures out how to draw the axis labels and grid lines.  The
  * axes must be linear, but logarithmic graphs are supported by taking the log
@@ -1139,7 +1326,6 @@ TransformCompute(LocalWin *wi)
 	register struct data_set *p;
 	double bbCenX, bbCenY, bbHalfWidth, bbHalfHeight;
 	int maxwid, height;
-	int pad = (TICKLENGTH + PADDING)*2 + mark_w;  /* pad inside outline */
 
 	/*
 	 * First,  we figure out the origin in the X window.  Above the space
@@ -1168,7 +1354,8 @@ TransformCompute(LocalWin *wi)
 	wi->XOppX = wi->width - maxName - PADDING*2 - mark_w;
 	wi->XOppY = wi->height - height - PADDING - mark_h;
 
-	if ((wi->XOrgX + pad >= wi->XOppX) || (wi->XOrgX + pad >= wi->XOppY)) {
+	if ((wi->XOrgX + pad >= wi->XOppX - pad) ||
+	    (wi->XOrgX + pad >= wi->XOppY - pad)) {
 		(void)fprintf(stderr, "Drawing area is too small\n");
 		return 0;
 	}
@@ -1177,9 +1364,9 @@ TransformCompute(LocalWin *wi)
 	 * units per pixel using the data set bounding box.
 	 */
 	wi->XUnitsPerPixel = (wi->hiX - wi->loX) /
-				(double)(wi->XOppX - wi->XOrgX - pad);
+				(double)(wi->XOppX - wi->XOrgX - 2*pad);
 	wi->YUnitsPerPixel = (wi->hiY - wi->loY) /
-				(double)(wi->XOppY - wi->XOrgY - pad);
+				(double)(wi->XOppY - wi->XOrgY - 2*pad);
 
 	/*
 	 * Find origin in user coordinate space.  We keep the center of the
@@ -1923,8 +2110,17 @@ out:
 			r.hiY = r.loY;
 			r.loY = temp;
 		}
+		/* Limit the new bounding box within overall_bb */
+		if (r.loX < overall_bb.loX)
+			r.loX = overall_bb.loX;
+		if (r.hiX > overall_bb.hiX)
+			r.hiX = overall_bb.hiX;
+		if (r.loY < overall_bb.loY)
+			r.loY = overall_bb.loY;
+		if (r.hiY > overall_bb.hiY)
+			r.hiY = overall_bb.hiY;
 		/* physical aspect ratio */
-		r.asp = (double)abs(startX - curX) / (double)abs(startY - curY);
+		r.asp = (r.hiX - r.loX) / (r.hiY - r.loY);
 		return (&r);
 	}
 	return ((BBox *)0);

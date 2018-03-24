@@ -36,6 +36,7 @@ struct plotflags {
 	char errorbar;		/* Draw error bars */
 };
 
+extern char naturalScroll;	/* Pan the content rather than window */
 extern int dateXFlag;		/* Date X axis */
 extern int localTime;		/* Show timestamps as local time not GMT */
 extern int logXFlag;		/* Logarithmic X axis */

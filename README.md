@@ -3,12 +3,12 @@ Help sheet for "graf"
 
 graf is a very lightweight graphing tool for use with the X Window
 System.  The program was derived from the original X10 xgraph written
-by David Harrison at University of California, Berkeley in 1986, 1987.
-It was "heavily hacked" by Van Jacobson and Steven McCanne, UCB/LBL to
-add mouse functions to identify points and compute slopes and
+by David Harrison at University of California, Berkeley in 1986-1987.
+It was "heavily hacked" by Van Jacobson and Steven McCanne at UCB/LBL
+to add mouse functions to identify points and compute slopes and
 distances, plus keystroke commands to toggle most of the visual
 attributes of a window (grid, line, markers, etc.).  Additional
-enhancements were added by Stephen Casner at Packet Design.
+enhancements were added by Stephen Casner at Packet Design and later.
 
 graf is not intended for producing finished graphs for publication.
 Rather, it is particularly useful for exploring data.  It allows
@@ -17,9 +17,7 @@ lines or impulses, with easy switching among those modes and quick
 hiding and unhiding each line as needed to see what is underneath.
 You can display the value of any data point, measure the distance
 between data points or calculate a slope or a linear regression, and
-zoom in on a subset of the data for an expanded look.  The primary
-limitation is the lack of a panning function.  You must create another
-zoomed view instead.
+zoom in on a subset of the data for an expanded look.
 
 
 Data Format
@@ -133,6 +131,12 @@ the desired level.  Hold the shift key while dragging the right mouse
 button to write out the subset of points spanned into the file
 xgraph.tmp (there is no visual feedback after the file is written).
 
+Scroll with a mouse wheel or trackpad gesture to pan the graph view
+up, down, left or right.  If the X resource NaturalScroll is true the
+direction is flipped so the graph is panned rather than the view.
+Hold the shift key and scroll up to zoom in or down to zoom out at the
+cursor.  Panning and zooming may be slow with many points in the view.
+
 
 Keystroke Commands
 ------------------
@@ -160,3 +164,33 @@ typed anywhere in the graf window.
 
 When hiding of a dataset is toggled off, the dataset is redrawn on top
 of the other datasets.  Ctrl-L will restore the original drawing order.
+
+
+X Resources
+-------------
+
+graf will query the X server for resources defined under its name to
+set defaults for the following parameters:
+
+    Background     Background pixel color
+    Border         Border color
+    BorderSize     Border width in pixels
+    ErrorBars      Draw error bars for four-value data sets
+    Foreground     Foreground pixel color
+    InfoFont       Font for popup messages (point ID, slope, etc.)
+    LabelFont      Font for grid labels
+    Markers        Draw a marker icon at each data point
+    NaturalScroll  Pan the graph rather than the view when scrolling
+    NoLines        Do not draw lines between data points
+    Outline        Draw an outline around the graph area
+    PixelMarkers   Mark data points with a single pixel, not an icon
+    Rectangles     Draw rectangles for four-value data sets
+    Text2Color     Color of second-level X-axis date labels
+    Text3Color     Color of third-level X-axis date labels
+    Ticks          Draw tick marks rather that full grid lines
+    TitleFont      Font for graph title and Help window titles
+    geometry       Specify the X11 geometry for the graf window
+    precision      Number of digits of precision in popup messages
+
+These resource parameters are typically set in a ~/.Xresources file,
+but may also be set by other means.

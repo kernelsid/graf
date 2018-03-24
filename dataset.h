@@ -59,4 +59,4 @@ struct data_set {
 };
 
 extern struct data_set *datasets;
-
+extern BBox overall_bb;	/* Overall bounding box from initial main window */

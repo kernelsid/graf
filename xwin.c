@@ -62,12 +62,16 @@ extern void DoDistance(XButtonEvent *e, LocalWin *wi, Cursor cur);
 extern void DoWriteSubset(XButtonEvent *evt, LocalWin *wi, Cursor cur);
 extern int HandleZoom(XButtonEvent *evt, LocalWin *wi, Cursor cur);
 extern void DrawWindow(Window win, LocalWin *wi);
+extern void PanWindow(LocalWin *wi, unsigned long direction);
+extern void ZoomWindow(XButtonEvent *b, LocalWin *wi, unsigned long direction);
 extern void DrawSetNo(LocalWin *wi, Window win, int setno);
 extern int MeasureHelp();
 
 extern char *progname;
 char *geometry = "=600x512";	/* Geometry specification */
 Display *display;
+BBox overall_bb;	/* Overall bounding box from initial main window */
+char naturalScroll = 0;	/* Pan the content rather than the window */
 int dateXFlag = 0;	/* Date X axis */
 int localTime = 0;	/* Show timestamps as local time not GMT */
 int logXFlag = 0;	/* Logarithmic X axis */
@@ -339,6 +343,10 @@ NewWindow(BBox *bbp, struct plotflags *flags, LocalWin *parent)
 			wi->loY -= epsilon;
 		}
 	}
+	bbp->loX = wi->loX;	/* Return the padded BBox */
+	bbp->hiX = wi->hiX;
+	bbp->loY = wi->loY;
+	bbp->hiY = wi->hiY;
 
 	if (parent == 0) {
 		initSizeHints(wi);
@@ -409,20 +417,56 @@ xmain(struct plotflags *flags, int xlimits, int ylimits, double loX, double loY,
 {
 	BBox bb;
 	int num_wins;
+	double bbr, oaw, oah, oar, larger, delta;
 
 	if (axisFont == 0)
 		error("%s: font not found (try -f)", DEFAULT_FONT);
 
 	DataSetBBox(&bb);
 	bb.asp = 1.0;
+	overall_bb = bb;
+	/*
+	 * If the user provided X and/or Y coordinate limits, apply them.
+	 * Those limits may be larger or smaller than the bounding box of
+	 * the data.  Expand the overall_bb, if needed, to be the union.
+	 */
 	if (xlimits) {
 		bb.loX = loX;
 		bb.hiX = hiX;
+		if (loX < overall_bb.loX)
+			overall_bb.loX = loX;
+		if (hiX > overall_bb.hiX)
+			overall_bb.hiX = hiX;
 	}
 	if (ylimits) {
 		bb.loY = loY;
 		bb.hiY = hiY;
+		if (loY < overall_bb.loY)
+			overall_bb.loY = loY;
+		if (hiY > overall_bb.hiY)
+			overall_bb.hiY = hiY;
 	}
+	/*
+	 * If needed, expand the overall_bb outward from the center
+	 * horizontally or vertically so that it keeps the same aspect
+	 * ratio as the user provided coordinate space.
+	 */
+	bbr = (bb.hiX - bb.loX) / (bb.hiY - bb.loY);
+	oaw = (overall_bb.hiX - overall_bb.loX);
+	oah = (overall_bb.hiY - overall_bb.loY);
+	oar = oaw / oah;
+	if (bbr < oar) {
+		larger = oah * oar / bbr;
+		delta = (larger - oah) / 2;
+		overall_bb.loY -= delta;
+		overall_bb.hiY += delta;
+	} else if (bbr > oar) {
+		larger = oaw * bbr / oar;
+		delta = (larger - oaw) / 2;
+		overall_bb.loX -= delta;
+		overall_bb.hiX += delta;
+	}
+
 	zoomCursor = XCreateFontCursor(display, XC_sizing);
 	crossCursor = XCreateFontCursor(display, XC_crosshair);
 	wm_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", False);
@@ -500,6 +544,7 @@ static int
 DoButton(XButtonEvent *b, LocalWin *wi, Cursor zc)
 {
 	int windelta = 0;
+	XEvent e;
 
 	switch (b->button) {
 
@@ -524,6 +569,16 @@ DoButton(XButtonEvent *b, LocalWin *wi, Cursor zc)
 			windelta = HandleZoom(b, wi, zc);
 		break;
 
+	case Button4:
+	case Button5:
+	case Button5+1:
+	case Button5+2:
+		while (XCheckTypedEvent(display, ButtonPress, &e)) {}
+		if (b->state & ShiftMask)
+			ZoomWindow(b, wi, b->button);
+		else
+			PanWindow(wi, b->button);
+		break;
 	}
 	return windelta;
 }
@@ -554,13 +609,29 @@ DoKeyPress(Window win, LocalWin *wi, XKeyEvent *xk, int type)
 #define	MAXKEYS 32
 	char keys[MAXKEYS];
 	KeySym keysym;
+	XEvent e;
 
 	n = XLookupString(xk, keys, sizeof(keys), &keysym, 
 			  (XComposeStatus *)0);
 
-	if (n == 0 && keysym == XK_F1) {	/* Translate F1 to '?' */
-		keys[0] = '?';
-		n = 1;
+	if (n == 0 && type == KeyPress) {
+		switch(keysym) {
+		case XK_F1:		/* Translate F1 to '?' */
+			keys[0] = '?';
+			n = 1;
+			break;
+
+		case XK_Up:
+		case XK_Down:
+		case XK_Left:
+		case XK_Right:
+			while (XCheckTypedEvent(display, KeyPress, &e)) {}
+			if (xk->state & ShiftMask)
+				ZoomWindow((XButtonEvent*)0, wi, keysym);
+			else
+				PanWindow(wi, keysym);
+			return 0;
+		}
 	}
 	get_dflags(wi, &flags);
 	for (k = 0; k < n; ++k) {
@@ -953,6 +1024,7 @@ xdefaults(struct plotflags *flags)
 	xdef_int("precision", &precision);
 	xdef_flag("Rectangles", &flags->rectangle);
 	xdef_flag("ErrorBars", &flags->errorbar);
+	xdef_flag("NaturalScroll", &naturalScroll);
 }
 
 void
