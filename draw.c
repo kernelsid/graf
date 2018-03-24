@@ -672,7 +672,8 @@ DrawSet(LocalWin *wi, Window win, struct data_set *p)
 	struct plotflags* flags = &wi->dflags[p->setno];
 	int beyond;
 
-	loX = wi->loX; loY = wi->loY; hiX = wi->hiX; hiY = wi->hiY;
+	loX = wi->UsrOrgX; loY = wi->UsrOrgY;
+	hiX = wi->UsrOppX; hiY = wi->UsrOppY;
 	vp = p->dvec;
 	ep = &p->dvec[p->numPoints];
 	ver = Xpoints;
