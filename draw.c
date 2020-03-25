@@ -573,6 +573,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	}
 	y = wi->height - height;
 	int Xnum = 0;
+	double Xshift = 0;
 	for (Xindex = Xstart; Xindex <= Xend; ++Xnum) {
 		x = SCREENX(wi, Xindex + Xoffset);
 
@@ -599,8 +600,8 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 		} else
 			XDrawLine(display, win, textGC, x, wi->XOrgY, x,
 				  wi->XOppY);
-		if (!dateXFlag || !Xmonths)
-			Xindex = Xstart + Xincr*Xnum; /* Avoid error accum. */
+		if (!Xmonths)
+			Xindex = Xstart + Xincr*Xnum + Xshift; /* Avoid error accum. */
 		if (dateXFlag) {
 			time_t xsec = (time_t)Xindex;
 			struct tm xtm;
@@ -618,17 +619,17 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 				Xindex = localTime ? mktime(&xtm) :
 					timegm(&xtm);
 			} else {
-				xsec = (time_t)Xindex;
 				if (localTime && (Xincr > 60*60)) {
 					if (isDST && !xtm.tm_isdst) {
+						Xshift += 60*60;
 						Xindex += 60*60;
 					} else if (!isDST && xtm.tm_isdst) {
+						Xshift -= 60*60;
 						Xindex -= 60*60;
 						if (Xincr < 240*60)
 							Xindex += Xincr;
 					}
 				}
-				xsec = (time_t)Xindex;
 			}
 			if (localTime) {
 				xsec = (time_t)Xindex;
