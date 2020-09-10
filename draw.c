@@ -81,6 +81,7 @@ static char *marks[] = {
 #define SPACE 		10
 #define TICKLENGTH	5
 #define PADDING 	2
+#define LABELPAD 	5
 #define PIXVALUE(set) 	(AllAttrs[(set) % MAXATTR].pixelValue)
 
 static int pad = TICKLENGTH + PADDING + mark_w/2;  /* pad inside outline */
@@ -1547,10 +1548,12 @@ DoIdentify(XButtonEvent *e, LocalWin *wi, Cursor cur, int noPoints)
 	height = infoFont->ascent + infoFont->descent;
 	labx -= width / 2;
 	laby += height;
-	if (labx + width > wi->width)
-		labx = wi->width - width;
-	if (labx < 0)
-		labx = 0;
+	if (labx + width > wi->width - LABELPAD)
+		labx = wi->width - width - LABELPAD;
+	if (labx < LABELPAD)
+		labx = LABELPAD;
+	if (laby > wi->XOppY - TICKLENGTH)
+	    laby -= height * 3;
 
 	/* save what's under the label, then output the label */
 	pm = XCreatePixmap(display, w, width, height, depth);
@@ -1725,10 +1728,12 @@ DoRegression(XButtonEvent *e, LocalWin *wi, Cursor cur)
 	height = infoFont->ascent + infoFont->descent;
 	labx -= width / 2;
 	laby += height;
-	if (labx + width > wi->width)
-		labx = wi->width - width;
-	if (labx < 0)
-		labx = 0;
+	if (labx + width > wi->width - LABELPAD)
+		labx = wi->width - width - LABELPAD;
+	if (labx < LABELPAD)
+		labx = LABELPAD;
+	if (laby > wi->XOppY - TICKLENGTH)
+	    laby -= height * 3;
 
 	/* prepare to return the label as X selection if asked */
 	strncpy(selection, labstr, MAXIDENTLEN);
@@ -1845,10 +1850,12 @@ DoDistance(XButtonEvent *e, LocalWin *wi, Cursor cur)
 	hheight = infoFont->ascent + infoFont->descent;
 	hlabx = sx - hwidth / 2;
 	hlaby = sy + hheight;
-	if (hlabx + hwidth > wi->width)
-		hlabx = wi->width - hwidth;
-	if (hlabx < 0)
-		hlabx = 0;
+	if (hlabx + hwidth > wi->width - LABELPAD)
+		hlabx = wi->width - hwidth - LABELPAD;
+	if (hlabx < LABELPAD)
+		hlabx = LABELPAD;
+	if (hlaby + hheight > wi->XOppY - TICKLENGTH)
+	    hlaby = sy - hheight * 2;
 
 	/* save what's under the label, then output the label */
 	pmh = XCreatePixmap(display, w, hwidth, hheight, depth);
