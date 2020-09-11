@@ -1473,7 +1473,7 @@ static struct data_set *closest_point(
 	struct data_set *p, *mset;
 	Value *v;
 	int pt;
-	double mdist;
+	double d, mdist, mx = ux, my = uy;
 	double xthresh = 8 * wi->XUnitsPerPixel;
 	double ythresh = 8 * wi->YUnitsPerPixel;
 
@@ -1486,14 +1486,24 @@ static struct data_set *closest_point(
 		v = p->dvec;
 		for (pt = p->numPoints; --pt >= 0;) {
 			if (fabs(v->x - ux) < xthresh &&
-			    fabs(v->y - uy) < ythresh)
-			    if (dist(ux, uy, v->x, v->y) < mdist) {
-				mdist = dist(ux, uy, v->x, v->y);
-				mset = p;
-				*cpt = p->numPoints - pt - 1;
-				if (comment != NULL)
-					*comment = v->comment;
-			    }
+			    fabs(v->y - uy) < ythresh) {
+				// If there are multiple datapoints at the same
+				// location, then when the cursor is to the
+				// left of the datapoints prefer the
+				// lower-numbered one, or to the right prefer
+				// the higher-numbered one.
+				d = dist(ux, uy, v->x, v->y);
+				if (d < mdist ||
+				    (mx == v->x && my == v->y && ux > v->x)) {
+					mdist = d;
+					mx = v->x;
+					my = v->y;
+					mset = p;
+					*cpt = p->numPoints - pt - 1;
+					if (comment != NULL)
+						*comment = v->comment;
+				}
+			}
 			++v;
 		}
 	}
