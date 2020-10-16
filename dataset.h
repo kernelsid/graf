@@ -53,7 +53,6 @@ struct data_set {
 	BBox bb;		/* bounding box around data set */
 	void *GC;		/* data point graphics context for X */
 	void *mGC;		/* marker graphics context */
-	int regression;		/* Have calculated regression line */
 	int x1, y1, x2, y2;	/* Regression line endpoints in X11 space */
 	double m, b;		/* Regression slope and intercept */
 };

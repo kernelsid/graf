@@ -127,7 +127,6 @@ nextDataSet(char *name)
 	*lastSet = p;
 	lastSet = &p->next;
 	p->next = 0;
-	p->regression = 0;
 
 	return p;
 }

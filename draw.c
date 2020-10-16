@@ -1398,56 +1398,66 @@ TransformCompute(LocalWin *wi)
 }
 
 /*
- * Calculate the least-squares regression (linear fit) for a data set.  We
- * subtract off the loX and loY values to avoid exceeding the resolution of
- * double-precision floating point for cases such as timestamps for the X axis.
+ * Calculate the least-squares regression (linear fit) for the portion of a
+ * data set visible in the window.  We subtract off the bounding box loX and
+ * loY values to avoid exceeding the resolution of double-precision floating
+ * point for cases such as timestamps for the X axis.
  */
 static void calculate_regression(LocalWin *wi, struct data_set *p)
 {
 	double x, y, m, b;
 	double d;
 	double sx = 0, sy = 0, sx2 = 0, sxy = 0;
-	int n = p->numPoints;
+	int n = 0;
 	Value *vp = p->dvec;
-	Value *ep = &p->dvec[n];
+	Value *ep = &p->dvec[p->numPoints];
 	double lx = p->bb.loX;
 	double ly = p->bb.loY;
+	double loX = wi->UsrOrgX;
+	double loY = wi->UsrOrgY;
+	double hiX = wi->UsrOppX;
+	double hiY = wi->UsrOppY;
 
 	for ( ; vp < ep; ++vp) {
-		x = vp->x - lx;
-		y = vp->y - ly;
+		x = vp->x;
+		y = vp->y;
+		if (x < loX || x > hiX || y < loY || y > hiY)
+			continue;
+		x -= lx;
+		y -= ly;
 		sx += x;
 		sy += y;
 		sx2 += x*x;
 		sxy += x*y;
+		++n;
 	}
 	d = (n * sx2 - sx * sx);
 	m = (n * sxy - sx * sy) / d;
 	b = (sy - m * sx) / n - m * lx + ly;
 	if (d == 0.0) {
-		p->x1 = SCREENX(wi, p->bb.loX);
-		p->y1 = SCREENY(wi, p->bb.loY);
-		p->x2 = SCREENX(wi, p->bb.hiX);
-		p->y2 = SCREENY(wi, p->bb.hiY);
+		p->x1 = SCREENX(wi, loX);
+		p->y1 = SCREENY(wi, loY);
+		p->x2 = SCREENX(wi, hiX);
+		p->y2 = SCREENY(wi, hiY);
 	} else {
-		x = p->bb.loX;
+		x = loX;
 		y = x * m + b;
-		if (y < p->bb.loY) {
-			y = p->bb.loY;
+		if (y < loY) {
+			y = loY;
 			x = (y - b) / m;
-		} else if (y > p->bb.hiY) {
-			y = p->bb.hiY;
+		} else if (y > hiY) {
+			y = hiY;
 			x = (y - b) / m;
 		}
 		p->x1 = SCREENX(wi, x);
 		p->y1 = SCREENY(wi, y);
-		x = p->bb.hiX;
+		x = hiX;
 		y = x * m + b;
-		if (y < p->bb.loY) {
-			y = p->bb.loY;
+		if (y < loY) {
+			y = loY;
 			x = (y - b) / m;
-		} else if (y > p->bb.hiY) {
-			y = p->bb.hiY;
+		} else if (y > hiY) {
+			y = hiY;
 			x = (y - b) / m;
 		}
 		p->x2 = SCREENX(wi, x);
@@ -1455,7 +1465,6 @@ static void calculate_regression(LocalWin *wi, struct data_set *p)
 	}
 	p->m = m;
 	p->b = b;
-	p->regression = 1;
 }
 
 static double inline dist(double ux, double uy, double x, double y)
@@ -1713,9 +1722,7 @@ DoRegression(XButtonEvent *e, LocalWin *wi, Cursor cur)
 	if (mset == 0) {
 		labptr += sprintf(labptr, "click data point");
 	} else {
-		if (mset->regression == 0) {
-			calculate_regression(wi, mset);
-		}
+		calculate_regression(wi, mset);
 		XDrawLine(display, w, fitGC, mset->x1, mset->y1,
 			  mset->x2, mset->y2);
 		/* if we have more than one set, include set name */
