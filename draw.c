@@ -514,7 +514,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	 * gray we should use to distinguish labels of different resolutions.
 	 */
 	if (dateXFlag) {
-		time_t xsmin = (time_t)Xstart;
+		time_t xsmin = (time_t)wi->UsrOrgX;
 		time_t xsmax = (time_t)wi->UsrOppX;
 		struct tm xtmin, xtmax;
 		if (localTime) {
@@ -535,6 +535,16 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 						++textLevelOffset;
 				}
 			}
+		} else if (!Xmonths) {
+			/* Determine if no grid line at New Year's */
+			xtmax.tm_sec = xtmax.tm_min = xtmax.tm_hour = 0;
+			xtmax.tm_mday = 1;
+			xtmax.tm_mon = 0;
+			xtmax.tm_yday = 0;
+			double newyears = localTime ? mktime(&xtmax) :
+				timegm(&xtmax);
+			if (fmod(newyears - Xstart, Xincr) != 0)
+				++textLevelOffset;
 		}
 	}
 
