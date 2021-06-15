@@ -397,7 +397,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 				if (++xtm.tm_mon > 11)
 					++xtm.tm_year;
 			}
-			/* Make Xmonths <= 4 or a multiple of 6 to see years */
+			/* Make Xmonths > 4 be a multiple of 6 to see years */
 			if (Xmonths > 4)
 				Xmonths = ((Xmonths + 5) / 6) * 6;
 			/* Align to Xmonths boundary */
@@ -670,7 +670,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 		width = XTextWidth(axisFont, datebuf, len);
 		x = SCREENX(wi, Xlast) - width / 2;
 		if (x + width > wi->width - 17)
-		x = wi->width - width - 17;
+			x = wi->width - width - 17;
 		XDrawString(display, win, textGC, x, y, datebuf, len);
 	}
 
