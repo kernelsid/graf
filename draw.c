@@ -394,8 +394,10 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 				gmtime_r(&xsec, &xtm);
 			if (Xmonths && xtm.tm_mday != 1) {
 				xtm.tm_mday = 1;
-				if (++xtm.tm_mon > 11)
+				if (++xtm.tm_mon > 11) {
 					++xtm.tm_year;
+					xtm.tm_mon = 0;
+				}
 			}
 			/* Make Xmonths > 4 be a multiple of 6 to see years */
 			if (Xmonths > 4)
