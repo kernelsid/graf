@@ -274,6 +274,7 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 	int textLevelOffset = 0;
 	int isDST = 0;
 	int Xmonths = 0;
+	int Xweeks = 0;
 	double Xincr, Yincr, Xstart, Ystart, Yindex, Xindex, larger;
 	double Xoffset, Yoffset, Xbase, Ybase, Xend, Yend;
 	char value[32];
@@ -371,10 +372,16 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 					if (Xincr > 28*24*60*60 &&
 					    Xincr < 32*24*60*60)
 						Xincr = 32*24*60*60;
+					if (Xincr > 30*24*60*60)
+						Xmonths = (int) ceil(Xincr /
+							(30.5*24*60*60));
+				} else if (Xincr > 5*24*60*60) {
+					Xweeks = 1;
+					if (Xincr > 7*24*60*60)
+						Xincr = 14*24*60*60;
+					else
+						Xincr = 7*24*60*60;
 				}
-				if (Xincr > 30*24*60*60)
-					Xmonths = (int) ceil(Xincr /
-							     (30.5*24*60*60));
 			} else {
 				if (Xincr > 4*60*60) {
 					Xincr = 12*60*60;
@@ -392,12 +399,12 @@ DrawGridAndAxis(Window win, LocalWin *wi)
 				localtime_r(&xsec, &xtm);
 			else
 				gmtime_r(&xsec, &xtm);
+			if (Xweeks && xtm.tm_wday != 0) {
+				xtm.tm_mday += 7 - xtm.tm_wday;
+			}
 			if (Xmonths && xtm.tm_mday != 1) {
 				xtm.tm_mday = 1;
-				if (++xtm.tm_mon > 11) {
-					++xtm.tm_year;
-					xtm.tm_mon = 0;
-				}
+				++xtm.tm_mon;
 			}
 			/* Make Xmonths > 4 be a multiple of 6 to see years */
 			if (Xmonths > 4)
